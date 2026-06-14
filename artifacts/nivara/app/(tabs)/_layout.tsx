@@ -5,6 +5,7 @@ import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { useTranslation } from "@/hooks/useTranslation";
 
 let isGlassAvailable = false;
 try {
@@ -19,6 +20,7 @@ try {
 }
 
 function NativeTabLayout() {
+  const { t } = useTranslation();
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { NativeTabs, Icon, Label } = require("expo-router/unstable-native-tabs");
@@ -26,19 +28,19 @@ function NativeTabLayout() {
       <NativeTabs>
         <NativeTabs.Trigger name="index">
           <Icon sf={{ default: "house", selected: "house.fill" }} />
-          <Label>Home</Label>
+          <Label>{t("tabHome")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="contacts">
           <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-          <Label>Contacts</Label>
+          <Label>{t("tabContacts")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="nearby">
           <Icon sf={{ default: "mappin.circle", selected: "mappin.circle.fill" }} />
-          <Label>Nearby</Label>
+          <Label>{t("tabNearby")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-          <Label>Settings</Label>
+          <Label>{t("tabSettings")}</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -49,6 +51,7 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
@@ -76,37 +79,35 @@ function ClassicTabLayout() {
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
-            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("tabHome"),
           tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="contacts"
         options={{
-          title: "Contacts",
+          title: t("tabContacts"),
           tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="nearby"
         options={{
-          title: "Nearby",
+          title: t("tabNearby"),
           tabBarIcon: ({ color }) => <Feather name="map-pin" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("tabSettings"),
           tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} />,
         }}
       />

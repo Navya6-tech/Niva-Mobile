@@ -1,0 +1,414 @@
+Fix and update the following in the NIVARA app. Do not change anything 
+else — only implement exactly what is listed below:
+
+=== CHANGE 1 — SHAKE DEVICE 3 TIMES TO TRIGGER SOS ===
+
+- When the user physically shakes their device 3 times rapidly within 
+  2 seconds → trigger the SOS countdown immediately
+- A "shake" is defined as a sharp back-and-forth motion detected by 
+  the accelerometer exceeding a threshold of 15–20 m/s²
+- Count each individual shake (back-and-forth = 1 shake)
+- After 3 shakes within 2 seconds → immediately start the 10-second 
+  SOS countdown screen
+- Show subtle vibration feedback after each shake is registered 
+  (1 short buzz per shake, longer buzz on 3rd to confirm SOS launching)
+- Reset shake counter to 0 if 2 seconds pass without 3 shakes completed
+- Must work even when:
+  → App is in the background
+  → Screen is off
+  → Stealth mode is active
+- Also keep: pressing physical volume down button 3 times rapidly 
+  within 1.5 seconds as an alternative SOS trigger
+
+Technical implementation:
+  If Flutter:
+  - Use sensors_plus package for accelerometer data
+  - Run shake detection inside a foreground service so it works 
+    in background and with screen off
+  - Use Vibration package for haptic feedback
+
+  If React Native:
+  - Use react-native-shake or accelerometer from react-native-sensors
+  - Run inside a headless JS task / foreground service for 
+    background support
+
+  If Native Android:
+  - Use SensorManager with TYPE_ACCELEROMETER
+  - Implement ShakeDetector inside a Foreground Service
+  - Use Vibrator API for haptic feedback
+
+- Add a toggle in Settings to enable/disable shake-to-SOS
+- Add sensitivity setting: Low / Medium / High 
+  (adjusts the m/s² threshold accordingly)
+- Label: "Shake to SOS" / "हिलाकर SOS चालू करें"
+- Sensitivity label: "Shake Sensitivity" / "संवेदनशीलता"
+
+=== CHANGE 2 — FIX APP LAUNCHER ICON ===
+
+The app icon is still showing the default/generic icon. Fix this:
+
+- Set the NIVARA logo (pink woman + lotus design) as the app 
+  launcher icon
+- Generate all required icon sizes from the logo asset:
+
+  If Flutter:
+  - android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+  - android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+  - android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+  - android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+  - android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+  - Set ic_launcher_round.png for all sizes (same image, circular crop)
+  - Update AndroidManifest.xml: android:icon="@mipmap/ic_launcher"
+  - Use flutter_launcher_icons package if available
+
+  If React Native:
+  - Place in android/app/src/main/res/mipmap-* folders
+  - Update AndroidManifest.xml accordingly
+
+  If Native Android:
+  - Replace all mipmap-* ic_launcher files
+  - Add adaptive icon: ic_launcher_foreground.xml + 
+    ic_launcher_background.xml
+  - Set background color to #FFFFFF (white) to match logo
+
+- Icon must show NIVARA pink logo clearly on white background
+- Round and square versions must both display correctly
+- Rebuild the app after changing icons so changes take effect
+
+=== CHANGE 3 — FIX ALL ERRORS ON LAUNCH / USE ===
+
+Debug and fix all errors currently appearing in the app:
+
+- Check error log / console and fix every error found
+- Common causes to check:
+  → Null pointer exceptions on startup
+  → Missing Firebase config file (google-services.json)
+  → Permission not checked before using mic/GPS/SMS
+  → SpeechRecognizer not available on device/emulator
+  → Missing API keys (Google Maps key not set in AndroidManifest.xml)
+  → Network calls failing without internet check
+  → Missing try-catch around any feature that can throw an exception
+- Wrap ALL feature initializations in try-catch with meaningful 
+  error messages shown to user
+- If Firebase fails to initialize → show:
+  "Service temporarily unavailable. Core safety features still work."
+- If Google Maps API key is missing → show placeholder in Nearby 
+  Help screen: "Map unavailable. Check your connection."
+- App must NEVER show a raw crash/exception screen to the user — 
+  always catch and show a friendly message
+
+=== CHANGE 4 — FIX ALL ICONS NOT SHOWING ===
+
+All icons throughout the app are broken or invisible. Fix every one:
+
+- Audit every screen for missing or broken icons
+- Use ONLY icons from the platform's built-in default set:
+
+  If Flutter — use Icons.* from material package:
+  - Home → Icons.home
+  - Contacts → Icons.contacts
+  - Nearby Help → Icons.local_hospital
+  - Settings → Icons.settings
+  - Microphone → Icons.mic and Icons.mic_off
+  - SOS / Alert → Icons.warning_rounded
+  - Call → Icons.call
+  - Message / SMS → Icons.sms
+  - Location → Icons.location_on
+  - Add → Icons.add
+  - Delete → Icons.delete
+  - Play → Icons.play_arrow
+  - Pause → Icons.pause
+  - Save → Icons.save
+  - Hospital → Icons.local_hospital
+  - Police → Icons.local_police
+  - Pharmacy → Icons.local_pharmacy
+  - Timer → Icons.timer
+  - Shield / Safety → Icons.shield
+  - Dark mode → Icons.dark_mode
+  - Light mode → Icons.light_mode
+  - Language → Icons.language
+  - Recording → Icons.fiber_manual_record
+  - Battery → Icons.battery_full
+  - Permissions → Icons.security
+  - Check / Done → Icons.check_circle
+  - Arrow → Icons.arrow_forward_ios
+  - Shake → Icons.vibration
+
+  If React Native — install and properly link 
+  react-native-vector-icons (MaterialIcons)
+
+  If Native Android — use built-in Material Design drawables 
+  from the support library
+
+- Do NOT use any external icon library requiring network access
+- Do NOT use image assets for icons that should be vector icons
+- Confirm all icons are visible in both light and dark mode
+
+=== CHANGE 5 — REMOVE NIVARA BRANDING FROM SETTINGS BOTTOM ===
+
+- Find and delete the "NIVARA" text, tagline, logo, or any branding 
+  element at the bottom of the Settings Screen
+- Remove completely — do not replace with anything
+- Settings Screen must end cleanly after the last settings item
+- Do not remove any functional settings items
+
+=== CHANGE 6 — MOVE AUDIO PLAYBACK FROM SETTINGS TO HOME SCREEN ===
+
+STEP 1 — REMOVE FROM SETTINGS:
+- Remove the audio recordings / playback section from Settings entirely
+- No empty space, divider, or heading left behind
+
+STEP 2 — ADD TO HOME SCREEN:
+- Add a "Recordings" / "रिकॉर्डिंग्स" section on the Home Screen 
+  below existing content
+- Icon: Icons.fiber_manual_record
+
+Each recording card shows:
+  - Date and time (e.g., "Jun 13, 2026 — 11:42 PM")
+  - Duration (e.g., "2m 34s")
+  - File size (e.g., "3.1 MB")
+
+Each card has:
+  - ▶ Play — inline playback, no external app
+  - ⏸ Pause — pauses playback
+  - 🗑 Delete — confirmation dialog:
+    "Delete this recording? This cannot be undone."
+    / "यह रिकॉर्डिंग हटाएं? इसे वापस नहीं लाया जा सकता।"
+  - 💾 Keep — removes the 72-hour auto-delete flag
+
+- Progress bar shown on actively playing card
+- Only one recording plays at a time
+- Use device MediaPlayer API for playback
+- Recordings auto-delete after 72 hours unless Keep is tapped
+
+Empty state:
+  "No recordings yet. Recordings are saved automatically 
+  during an SOS alert."
+  Hindi: "अभी तक कोई रिकॉर्डिंग नहीं। SOS अलर्ट के दौरान 
+  रिकॉर्डिंग स्वचालित रूप से सहेजी जाती हैं।"
+
+- Section respects active theme (light/dark)
+- All text respects active language (English/Hindi)
+
+=== CHANGE 7 — APP MUST RUN IN BACKGROUND AT ALL TIMES ===
+
+The NIVARA app must continue running fully in the background at all 
+times — even when the user closes the app, locks the screen, or 
+switches to another app.
+
+FOREGROUND SERVICE (ALWAYS ON):
+- Implement a persistent Foreground Service that starts automatically 
+  when the app is first opened and never stops unless the user 
+  explicitly disables it from Settings
+- The foreground service must keep ALL of the following alive:
+  → Voice trigger / SpeechRecognizer listening
+  → Shake detection (accelerometer monitoring)
+  → Volume button press detection
+  → Check-in timer countdown
+  → Active SOS location tracking (when SOS is running)
+
+- Show a permanent non-dismissable notification while service runs:
+  Title: "NIVARA is protecting you"
+  / "NIVARA आपकी सुरक्षा कर रहा है"
+  Body: "Safety features are active in the background"
+  / "सुरक्षा सुविधाएं बैकग्राउंड में सक्रिय हैं"
+  Icon: shield icon (small, pink)
+  - ongoing = true (non-dismissable)
+  - Tapping it opens NIVARA home screen
+
+BOOT ON STARTUP:
+- App must automatically restart its background service on device reboot
+- Register a BroadcastReceiver for RECEIVE_BOOT_COMPLETED
+- On boot → restart foreground service silently within 10 seconds
+- No need to open app UI — just restart the background service
+- Add RECEIVE_BOOT_COMPLETED to AndroidManifest.xml
+
+BATTERY OPTIMIZATION EXEMPTION:
+- Request exemption from Android battery optimization using 
+  REQUEST_IGNORE_BATTERY_OPTIMIZATIONS during permissions flow
+- If not granted, show persistent warning banner on home screen:
+  "⚠️ Battery optimization may stop NIVARA in background. Tap to fix."
+  Hindi: "⚠️ बैटरी ऑप्टिमाइज़ेशन NIVARA को बंद कर सकती है। 
+  ठीक करने के लिए टैप करें।"
+  Tapping banner → opens battery optimization settings for the app
+
+MANUFACTURER-SPECIFIC FIXES:
+Auto-detect device manufacturer (Build.MANUFACTURER) and show 
+a one-time setup screen after permissions onboarding:
+Heading: "One Last Step — Keep NIVARA Always Active"
+/ "एक आखिरी कदम — NIVARA को हमेशा सक्रिय रखें"
+
+Show ONLY the relevant instructions for the detected brand:
+
+Xiaomi / MIUI:
+"Go to Security App → Manage Apps → NIVARA → Enable Autostart"
+
+Samsung / One UI:
+"Go to Battery Settings → Background Usage Limits → Remove NIVARA 
+from sleeping apps"
+
+OnePlus / OxygenOS:
+"Go to Settings → Battery → Battery Optimization → NIVARA → 
+Don't Optimize"
+
+Oppo / Vivo / Realme:
+"Go to Phone Manager → App Management → NIVARA → Enable 
+Background Running"
+
+- "Done" button → goes to home screen
+- "Remind me later" → shows reminder notification after 24 hours
+
+WORKMANAGER WATCHDOG:
+- Implement a WorkManager periodic task running every 15 minutes
+- Checks if foreground service is still running
+- If killed → restart it immediately
+- Tag: "nivara_watchdog"
+- Use PeriodicWorkRequest with 15-minute interval
+
+BACKGROUND LOCATION DURING SOS:
+- During active SOS, send location updates every 60 seconds even when:
+  → Screen is off
+  → App is in background
+  → Device is in doze mode
+- Use FusedLocationProviderClient with background location request
+- Use WakeLock during active SOS to prevent CPU sleep interrupting 
+  location updates
+
+SETTINGS — BACKGROUND PROTECTION SECTION:
+Add a new section in Settings called:
+"Background Protection" / "बैकग्राउंड सुरक्षा"
+
+- Show current status: "Active ✅" or "Inactive ❌"
+- Toggle: "Keep NIVARA running in background"
+  / "NIVARA को बैकग्राउंड में चालू रखें" (default: ON)
+- If turned OFF → show warning before confirming:
+  "⚠️ Turning this off will disable voice trigger, shake detection, 
+  and automatic SOS. Only do this to save battery."
+  Hindi: "⚠️ इसे बंद करने से वॉइस ट्रिगर, शेक डिटेक्शन और 
+  स्वचालित SOS बंद हो जाएगा।"
+- Require confirmation tap before turning off
+
+=== CHANGE 8 — USER CAN CHOOSE PREFERRED LANGUAGE ===
+
+Add a language selection screen that appears during onboarding 
+(before the permissions flow) and is also accessible anytime 
+from Settings:
+
+ONBOARDING LANGUAGE SCREEN (shows on very first launch, 
+before permissions):
+- Full screen with NIVARA logo at top
+- Heading: "Choose your language" displayed in both languages:
+  "Choose your language / अपनी भाषा चुनें"
+- Two large selectable option cards:
+
+  Card 1:
+  - Flag: 🇬🇧
+  - "English"
+  - Subtext: "Continue in English"
+
+  Card 2:
+  - Flag: 🇮🇳
+  - "हिंदी"
+  - Subtext: "हिंदी में जारी रखें"
+
+- Selected card highlights with pink border (#E91E8C)
+- "Continue" / "जारी रखें" button appears after selection
+- Tapping Continue → saves preference and proceeds to 
+  permissions flow
+- Default pre-selected: English
+
+SETTINGS — LANGUAGE SECTION:
+- In Settings, under a section called "Language" / "भाषा"
+- Icon: Icons.language
+- Show currently active language with a checkmark
+- Two options displayed as tappable rows:
+  → English (with 🇬🇧 flag)
+  → हिंदी (with 🇮🇳 flag)
+- Switching language applies INSTANTLY across entire app 
+  without restart
+- Save preference locally (SharedPreferences / AsyncStorage / 
+  Hive) so it persists after app restart and device reboot
+
+LANGUAGE APPLIES TO:
+- Every single screen in the app
+- All button labels
+- All headings and subheadings
+- All placeholder text in input fields
+- All error messages and toast notifications
+- All empty state messages
+- All confirmation dialogs
+- Background service notification text
+- SOS countdown screen text
+- "I'm Safe" button and all SOS active screen text
+- Manufacturer-specific setup instructions screen
+- Permissions onboarding screens
+- Check-in timer text
+- Recordings section on home screen
+
+Key translations (English → Hindi):
+"Your safety, always within reach." 
+→ "आपकी सुरक्षा, हमेशा आपके पास।"
+"Emergency Contacts" → "आपातकालीन संपर्क"
+"Add Contact" → "संपर्क जोड़ें"
+"Nearby Help" → "पास की सहायता"
+"Settings" → "सेटिंग्स"
+"Voice Trigger" → "वॉइस ट्रिगर"
+"SOS Alert Sent" → "SOS अलर्ट भेजा गया"
+"I'm Safe — Stop SOS" → "मैं सुरक्षित हूँ — SOS बंद करें"
+"Cancel" → "रद्द करें"
+"Save" → "सहेजें"
+"Delete" → "हटाएं"
+"Call" → "कॉल करें"
+"Directions" → "दिशा-निर्देश"
+"Check-In Timer" → "चेक-इन टाइमर"
+"Recordings" → "रिकॉर्डिंग्स"
+"No recordings yet." → "अभी तक कोई रिकॉर्डिंग नहीं।"
+"Dark Mode" → "डार्क मोड"
+"Light Mode" → "लाइट मोड"
+"Language" → "भाषा"
+"Background Protection" → "बैकग्राउंड सुरक्षा"
+"Shake to SOS" → "हिलाकर SOS चालू करें"
+"Shake Sensitivity" → "संवेदनशीलता"
+"Low" → "कम"
+"Medium" → "मध्यम"
+"High" → "अधिक"
+"NIVARA is protecting you" → "NIVARA आपकी सुरक्षा कर रहा है"
+"Safety features are active in the background" 
+→ "सुरक्षा सुविधाएं बैकग्राउंड में सक्रिय हैं"
+"One Last Step — Keep NIVARA Always Active" 
+→ "एक आखिरी कदम — NIVARA को हमेशा सक्रिय रखें"
+"You're all set!" → "आप तैयार हैं!"
+
+Technical implementation:
+  If Flutter:
+  - Use flutter_localizations + intl package
+  - Store strings in .arb files:
+    lib/l10n/app_en.arb (English)
+    lib/l10n/app_hi.arb (Hindi)
+  - Use LocaleNotifier or Provider to switch locale instantly
+
+  If React Native:
+  - Use i18next + react-i18next
+  - Store in JSON files: en.json and hi.json
+  - Call i18n.changeLanguage() on selection, persisted 
+    in AsyncStorage
+
+  If Native Android:
+  - Use strings.xml in res/values/ (English)
+  - Use strings.xml in res/values-hi/ (Hindi)
+  - Recreate activity on language change or use 
+    AppCompatDelegate.setApplicationLocales()
+
+=== DO NOT CHANGE ===
+- Any existing features or functionality not listed above
+- Light/dark mode logic
+- Firebase integration
+- SMS alert system
+- Voice trigger logic
+- Permissions onboarding flow
+- Check-in timer
+- Nearby help screen
+- Emergency contacts functionality
+- App color scheme and branding
+- Fake call feature
+- Inactivity detection

@@ -25,6 +25,8 @@ export interface AppSettings {
   onboardingComplete: boolean;
   fakeCallerName: string;
   fakeCallerNumber: string;
+  language: "en" | "hi";
+  backgroundProtectionEnabled: boolean;
 }
 
 export interface CheckInTimer {
@@ -60,6 +62,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   onboardingComplete: false,
   fakeCallerName: "Mom",
   fakeCallerNumber: "+91 98765 43210",
+  language: "en",
+  backgroundProtectionEnabled: true,
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -90,7 +94,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (contactsData) setContacts(JSON.parse(contactsData));
 
       const savedSettings = settingsData ? JSON.parse(settingsData) : {};
-      const merged = { ...DEFAULT_SETTINGS, ...savedSettings };
+      const merged: AppSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
       setSettings(merged);
 
       if (!merged.onboardingComplete) {

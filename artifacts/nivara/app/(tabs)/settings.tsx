@@ -11,10 +11,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function SectionHeader({ title }: { title: string }) {
   const colors = useColors();
@@ -70,6 +70,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { settings, updateSettings } = useApp();
+  const { t, lang } = useTranslation();
   const [newPhrase, setNewPhrase] = useState("");
   const [showPhraseInput, setShowPhraseInput] = useState(false);
   const [fakeNameEdit, setFakeNameEdit] = useState(false);
@@ -78,11 +79,18 @@ export default function SettingsScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const sensitivityLabel = (s: string) => {
+    if (lang === "hi") {
+      return `${t("sensitivityPrefix")} ${s === "low" ? t("low") : s === "medium" ? t("medium") : t("high")}`;
+    }
+    return `${t("sensitivityPrefix")} ${s === "low" ? t("low") : s === "medium" ? t("medium") : t("high")}`;
+  };
+
   const addPhrase = async () => {
     const trimmed = newPhrase.trim().toLowerCase();
     if (!trimmed) return;
     if (settings.triggerPhrases.includes(trimmed)) {
-      Alert.alert("Already exists", "This phrase is already in your list.");
+      Alert.alert(t("alreadyExists"), t("phraseAlreadyExists"));
       return;
     }
     await updateSettings({ triggerPhrases: [...settings.triggerPhrases, trimmed] });
@@ -101,6 +109,21 @@ export default function SettingsScreen() {
     setFakeNameEdit(false);
   };
 
+  const handleBgToggle = (v: boolean) => {
+    if (!v) {
+      Alert.alert(
+        t("bgWarningTitle"),
+        t("bgWarning"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          { text: t("confirm"), style: "destructive", onPress: () => updateSettings({ backgroundProtectionEnabled: false }) },
+        ]
+      );
+    } else {
+      updateSettings({ backgroundProtectionEnabled: true });
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -111,16 +134,62 @@ export default function SettingsScreen() {
         ]}
       >
         <Text style={[styles.title, { color: colors.foreground, fontFamily: "Poppins_700Bold" }]}>
-          Settings
+          {t("settingsTitle")}
         </Text>
 
+        {/* Language */}
+        <SectionHeader title={t("languageSection")} />
+        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
+          <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
+              <Feather name="globe" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
+                {t("languageLabel")}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.langRow}>
+            {(["en", "hi"] as const).map((lng) => (
+              <Pressable
+                key={lng}
+                style={[
+                  styles.langChip,
+                  {
+                    backgroundColor: settings.language === lng ? colors.primary : colors.muted,
+                    borderRadius: 12,
+                  },
+                ]}
+                onPress={() => updateSettings({ language: lng })}
+              >
+                <Text style={styles.langFlag}>{lng === "en" ? "🇬🇧" : "🇮🇳"}</Text>
+                <Text
+                  style={[
+                    styles.langChipText,
+                    {
+                      color: settings.language === lng ? "#fff" : colors.mutedForeground,
+                      fontFamily: "Poppins_500Medium",
+                    },
+                  ]}
+                >
+                  {lng === "en" ? t("english") : t("hindi")}
+                </Text>
+                {settings.language === lng && (
+                  <Feather name="check" size={14} color="#fff" />
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         {/* Voice trigger section */}
-        <SectionHeader title="VOICE TRIGGER" />
+        <SectionHeader title={t("voiceTrigger").toUpperCase()} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <SettingRow
             icon={<Feather name="mic" size={18} color={colors.primary} />}
-            label="Voice Trigger"
-            sublabel={settings.voiceTriggerActive ? "Listening for trigger phrases" : "Off — tap to enable"}
+            label={t("voiceTrigger")}
+            sublabel={settings.voiceTriggerActive ? t("voiceTriggerOn") : t("voiceTriggerOff")}
             right={
               <Switch
                 value={settings.voiceTriggerActive}
@@ -136,7 +205,7 @@ export default function SettingsScreen() {
           <View style={styles.phrasesSection}>
             <View style={styles.phrasesHeader}>
               <Text style={[styles.phrasesLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                Trigger Phrases
+                {t("triggerPhrases")}
               </Text>
               <Pressable onPress={() => setShowPhraseInput(!showPhraseInput)}>
                 <Feather name="plus-circle" size={20} color={colors.primary} />
@@ -191,12 +260,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* SOS behavior */}
-        <SectionHeader title="SOS BEHAVIOR" />
+        <SectionHeader title={t("sosBehaviorSection")} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <SettingRow
             icon={<Feather name="smartphone" size={18} color="#9C27B0" />}
-            label="Shake to SOS"
-            sublabel={`Sensitivity: ${settings.shakeSensitivity}`}
+            label={t("shakeToSOS")}
+            sublabel={sensitivityLabel(settings.shakeSensitivity)}
             right={null}
             onPress={() => {
               const levels: Array<"low" | "medium" | "high"> = ["low", "medium", "high"];
@@ -207,8 +276,8 @@ export default function SettingsScreen() {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <SettingRow
             icon={<Feather name="video-off" size={18} color="#607D8B" />}
-            label="Stealth Mode"
-            sublabel="Hide all alerts during SOS"
+            label={t("stealthMode")}
+            sublabel={t("stealthModeDesc")}
             isLast
             right={
               <Switch
@@ -222,7 +291,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Check-in timer */}
-        <SectionHeader title="CHECK-IN TIMER" />
+        <SectionHeader title={t("checkInSection")} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={styles.settingRow}>
             <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
@@ -230,10 +299,10 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.settingContent}>
               <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                Default Duration
+                {t("defaultDuration")}
               </Text>
               <Text style={[styles.settingSubLabel, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                {settings.checkInDuration} minutes
+                {settings.checkInDuration} {t("minutes")}
               </Text>
             </View>
           </View>
@@ -244,8 +313,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.durationChip,
                   {
-                    backgroundColor:
-                      settings.checkInDuration === min ? colors.primary : colors.muted,
+                    backgroundColor: settings.checkInDuration === min ? colors.primary : colors.muted,
                     borderRadius: 100,
                   },
                 ]}
@@ -268,7 +336,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Fake call */}
-        <SectionHeader title="FAKE CALL" />
+        <SectionHeader title={t("fakeCallSection")} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={styles.settingRow}>
             <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
@@ -276,7 +344,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.settingContent}>
               <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                Caller Name
+                {t("callerName")}
               </Text>
               {fakeNameEdit ? (
                 <View style={styles.fakeNameRow}>
@@ -312,12 +380,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Privacy */}
-        <SectionHeader title="PRIVACY & RECORDINGS" />
+        <SectionHeader title={t("privacySection").toUpperCase()} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <SettingRow
             icon={<Feather name="mic-off" size={18} color={colors.mutedForeground} />}
-            label="Audio Recording"
-            sublabel="Record audio during active SOS"
+            label={t("audioRecordingToggle")}
+            sublabel={t("audioRecordingDesc")}
+            isLast
             right={
               <Switch
                 value={settings.audioRecording}
@@ -327,23 +396,36 @@ export default function SettingsScreen() {
               />
             }
           />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow
-            icon={<Feather name="headphones" size={18} color={colors.primary} />}
-            label="Audio Recordings"
-            sublabel="Review and manage saved SOS recordings"
-            isLast
-            onPress={() => router.push("/recordings")}
-          />
         </View>
 
-        <View style={[styles.tagline, { backgroundColor: colors.accentForeground + "10", borderRadius: 16 }]}>
-          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-            <Text style={styles.logoLetter}>N</Text>
+        {/* Background Protection */}
+        <SectionHeader title={t("bgSection")} />
+        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
+          <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
+              <Feather name="shield" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
+                {t("bgToggle")}
+              </Text>
+              <Text style={[styles.settingSubLabel, { color: settings.backgroundProtectionEnabled ? "#4CAF50" : colors.destructive, fontFamily: "Poppins_500Medium" }]}>
+                {settings.backgroundProtectionEnabled ? t("bgActive") : t("bgInactive")}
+              </Text>
+            </View>
+            <Switch
+              value={settings.backgroundProtectionEnabled}
+              onValueChange={handleBgToggle}
+              trackColor={{ true: colors.primary, false: colors.muted }}
+              thumbColor="#fff"
+            />
           </View>
-          <Text style={[styles.taglineText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-            NIVARA — Your safety, always within reach.
-          </Text>
+          <View style={[styles.bgNote, { backgroundColor: colors.muted + "80" }]}>
+            <Feather name="info" size={13} color={colors.mutedForeground} />
+            <Text style={[styles.bgNoteText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+              {t("bgNote")}
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -355,82 +437,49 @@ const styles = StyleSheet.create({
   content: { padding: 20, gap: 16 },
   title: { fontSize: 24, marginBottom: 4 },
   sectionHeader: {
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginTop: 4,
-    marginBottom: -4,
-    paddingLeft: 4,
+    fontSize: 11, letterSpacing: 1,
+    textTransform: "uppercase", marginTop: 4, marginBottom: -4, paddingLeft: 4,
   },
   card: { overflow: "hidden" },
   divider: { height: 1 },
   settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    gap: 12,
-    minHeight: 60,
+    flexDirection: "row", alignItems: "center",
+    padding: 14, gap: 12, minHeight: 60,
   },
-  settingIcon: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  settingIcon: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   settingContent: { flex: 1, gap: 2 },
   settingLabel: { fontSize: 14 },
   settingSubLabel: { fontSize: 12 },
+  langRow: { flexDirection: "row", gap: 10, padding: 14, paddingTop: 4 },
+  langChip: {
+    flex: 1, flexDirection: "row", alignItems: "center",
+    justifyContent: "center", gap: 6, paddingVertical: 12, paddingHorizontal: 8,
+  },
+  langFlag: { fontSize: 18 },
+  langChipText: { fontSize: 14 },
   phrasesSection: { padding: 14, paddingTop: 8, gap: 12 },
   phrasesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   phrasesLabel: { fontSize: 14 },
   phraseList: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   phraseChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    flexDirection: "row", alignItems: "center",
+    gap: 6, paddingHorizontal: 12, paddingVertical: 6,
   },
   phraseText: { fontSize: 13 },
   phraseInputRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   phraseInput: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    borderWidth: 1,
+    flex: 1, paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 14, borderWidth: 1,
   },
   addPhraseBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  durationRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    padding: 14,
-    paddingTop: 0,
-  },
+  durationRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 14, paddingTop: 0 },
   durationChip: { paddingHorizontal: 14, paddingVertical: 7 },
   durationText: { fontSize: 13 },
   fakeNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  fakeNameInput: {
-    flex: 1,
-    fontSize: 14,
-    borderBottomWidth: 1,
-    paddingVertical: 2,
+  fakeNameInput: { flex: 1, fontSize: 14, borderBottomWidth: 1, paddingVertical: 2 },
+  bgNote: {
+    flexDirection: "row", gap: 8, padding: 12, alignItems: "flex-start",
+    borderBottomLeftRadius: 18, borderBottomRightRadius: 18,
   },
-  tagline: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
-    marginTop: 8,
-  },
-  logoMark: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoLetter: { color: "#fff", fontSize: 16, fontFamily: "Poppins_700Bold" },
-  taglineText: { fontSize: 13, flex: 1 },
+  bgNoteText: { flex: 1, fontSize: 12, lineHeight: 18 },
 });
