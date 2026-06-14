@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
@@ -149,7 +150,7 @@ export default function SettingsScreen() {
                   style={[styles.phraseChip, { backgroundColor: colors.accentForeground + "15", borderRadius: 100 }]}
                 >
                   <Text style={[styles.phraseText, { color: colors.primary, fontFamily: "Poppins_500Medium" }]}>
-                    "{phrase}"
+                    &quot;{phrase}&quot;
                   </Text>
                   <Pressable onPress={() => removePhrase(phrase)}>
                     <Feather name="x" size={14} color={colors.mutedForeground} />
@@ -311,13 +312,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* Privacy */}
-        <SectionHeader title="PRIVACY" />
+        <SectionHeader title="PRIVACY & RECORDINGS" />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <SettingRow
             icon={<Feather name="mic-off" size={18} color={colors.mutedForeground} />}
             label="Audio Recording"
             sublabel="Record audio during active SOS"
-            isLast
             right={
               <Switch
                 value={settings.audioRecording}
@@ -326,6 +326,14 @@ export default function SettingsScreen() {
                 thumbColor="#fff"
               />
             }
+          />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <SettingRow
+            icon={<Feather name="headphones" size={18} color={colors.primary} />}
+            label="Audio Recordings"
+            sublabel="Review and manage saved SOS recordings"
+            isLast
+            onPress={() => router.push("/recordings")}
           />
         </View>
 

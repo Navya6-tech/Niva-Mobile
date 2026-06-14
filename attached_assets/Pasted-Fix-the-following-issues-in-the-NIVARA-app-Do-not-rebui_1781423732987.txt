@@ -1,0 +1,66 @@
+Fix the following issues in the NIVARA app. Do not rebuild the app — 
+only make the specific changes listed below:
+
+=== FIX 1 — VOICE TRIGGER ERROR ===
+Debug and fix the error that occurs when the user turns on voice detection.
+- Check that RECORD_AUDIO permission is properly requested at runtime before 
+  starting the SpeechRecognizer
+- Ensure the SpeechRecognizer is initialized only after permission is granted
+- Add a try-catch around the voice recognition start logic
+- If the device does not support on-device speech recognition, show a clear 
+  error message: "Voice recognition is not supported on this device"
+- Make sure the foreground service for voice detection starts correctly on 
+  Android 8.0+ (API 26+) with a proper notification channel
+- Test that toggling voice ON/OFF does not crash the app
+
+=== FIX 2 — REMOVE SOS BUTTON FROM HOME SCREEN ===
+- Remove the large central SOS button from the Home Screen entirely
+- Do not replace it with anything — leave the space clean or redistribute 
+  the remaining home screen elements to fill the layout naturally
+
+=== FIX 3 — REMOVE EMERGENCY NUMBERS FROM HOME PAGE ===
+- Remove the static emergency numbers section from the Home Screen completely:
+  Police: 100, Ambulance: 108, Women Helpline: 1091, Emergency: 112
+- These should not appear on the Home Screen at all
+
+=== FIX 4 — MOVE "ADD EMERGENCY CONTACT" TO CONTACTS PAGE ===
+- Remove the "Add Emergency Contact" button/widget from the Home Screen
+- Place it inside the Emergency Contacts Screen instead, at the top or bottom 
+  of the contacts list
+- Ensure it still functions identically (opens the add contact form/dialog)
+
+=== FIX 5 — FIX BROKEN / INVISIBLE ICONS ===
+- All icons throughout the app are not rendering/visible — fix this completely
+- Check that the icon library is properly imported and linked 
+  (e.g., if using React Native: react-native-vector-icons is linked correctly; 
+  if Flutter: pubspec.yaml has the icons package; if native Android: 
+  drawable resources exist)
+- Replace any icons that rely on a missing or broken asset with working 
+  alternatives from the default system icon set
+- Test that icons are visible on: Home Screen, Navigation Bar, Contacts Screen, 
+  Nearby Help Screen, Settings Screen
+
+=== FIX 6 — AUDIO PLAYBACK FOR PREVIOUS RECORDINGS ===
+- Add an "Audio Recordings" section or screen accessible from Settings or Home
+- List all previously recorded SOS audio files stored on the device, showing:
+  - Date and time of recording
+  - Duration of the recording
+  - File size
+- Each recording card must have:
+  - ▶ Play button — plays the audio inline within the app
+  - ⏸ Pause button — pauses playback
+  - 🗑 Delete button — deletes the file permanently (with confirmation dialog)
+- Use the device's native audio player/MediaPlayer API for playback
+- If no recordings exist, show an empty state message: 
+  "No recordings yet. Recordings are saved automatically during an SOS alert."
+- Recordings must auto-delete after 72 hours unless the user manually saves them
+  (add a 💾 Save/Keep button that removes the auto-delete flag for that file)
+
+=== DO NOT CHANGE ===
+- Voice trigger logic (only fix the error, don't redesign it)
+- Emergency contacts functionality
+- Nearby hospitals/services screen
+- App color scheme and branding
+- Firebase integration
+- SMS alert system
+- Any other screens not mentioned above

@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Linking,
   Platform,
   Pressable,
@@ -14,7 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
-import { SOSButton } from "@/components/SOSButton";
 import { CountdownModal } from "@/components/CountdownModal";
 import { useShakeDetector } from "@/hooks/useShakeDetector";
 
@@ -52,13 +52,6 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [checkInTimer]);
 
-  const handleSOSPress = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    }
-    setCountdownVisible(true);
-  }, []);
-
   const handleCountdownConfirm = useCallback(() => {
     setCountdownVisible(false);
     triggerSOS();
@@ -74,11 +67,27 @@ export default function HomeScreen() {
     }
   }, [countdownVisible]);
 
-  useShakeDetector(
-    handleShake,
-    settings.shakeSensitivity,
-    !countdownVisible && !settings.voiceTriggerActive === false
-  );
+  useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible);
+
+  const handleVoiceToggle = useCallback(() => {
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Voice Trigger",
+        "Voice detection requires a native build. Install the app on your device to use this feature.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    const next = !settings.voiceTriggerActive;
+    try {
+      updateSettings({ voiceTriggerActive: next });
+      if (next && Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      Alert.alert("Error", "Could not toggle voice detection. Please try again.");
+    }
+  }, [settings.voiceTriggerActive, updateSettings]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -92,6 +101,7 @@ export default function HomeScreen() {
           { paddingTop: topPad + 16, paddingBottom: botPad + 100 },
         ]}
       >
+        {/* Header */}
         <View style={styles.topRow}>
           <View>
             <Text style={[styles.greeting, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
@@ -105,15 +115,11 @@ export default function HomeScreen() {
             style={[
               styles.voiceToggle,
               {
-                backgroundColor: settings.voiceTriggerActive
-                  ? colors.primary
-                  : colors.muted,
+                backgroundColor: settings.voiceTriggerActive ? colors.primary : colors.muted,
                 borderRadius: 100,
               },
             ]}
-            onPress={() =>
-              updateSettings({ voiceTriggerActive: !settings.voiceTriggerActive })
-            }
+            onPress={handleVoiceToggle}
           >
             <Feather
               name="mic"
@@ -145,10 +151,7 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.statusDot,
-                {
-                  backgroundColor:
-                    contacts.length > 0 ? "#4CAF50" : colors.warning,
-                },
+                { backgroundColor: contacts.length > 0 ? "#4CAF50" : colors.warning },
               ]}
             />
             <Text style={[styles.statusText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
@@ -160,11 +163,7 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.statusDot,
-                {
-                  backgroundColor: settings.voiceTriggerActive
-                    ? "#4CAF50"
-                    : colors.mutedForeground,
-                },
+                { backgroundColor: settings.voiceTriggerActive ? "#4CAF50" : colors.mutedForeground },
               ]}
             />
             <Text style={[styles.statusText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
@@ -176,26 +175,13 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.statusDot,
-                {
-                  backgroundColor: checkInTimer.active ? colors.warning : colors.mutedForeground,
-                },
+                { backgroundColor: checkInTimer.active ? colors.warning : colors.mutedForeground },
               ]}
             />
             <Text style={[styles.statusText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
               {checkInTimer.active ? "Check-in on" : "Check-in off"}
             </Text>
           </View>
-        </View>
-
-        {/* SOS button */}
-        <View style={styles.sosSection}>
-          <SOSButton onPress={handleSOSPress} size={140} />
-          <Text style={[styles.sosHint, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-            Tap to send emergency alert
-          </Text>
-          <Text style={[styles.sosHint2, { color: colors.mutedForeground + "80", fontFamily: "Poppins_400Regular" }]}>
-            or shake your phone 3 times
-          </Text>
         </View>
 
         {/* Check-in timer */}
@@ -241,8 +227,7 @@ export default function HomeScreen() {
                     style={[
                       styles.minuteChip,
                       {
-                        backgroundColor:
-                          checkInMinutes === min ? colors.primary : colors.muted,
+                        backgroundColor: checkInMinutes === min ? colors.primary : colors.muted,
                         borderRadius: 100,
                       },
                     ]}
@@ -275,60 +260,24 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Quick actions */}
-        <View style={styles.quickGrid}>
-          <Pressable
-            style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
-            onPress={() => Linking.openURL("tel:100")}
-          >
-            <Feather name="phone" size={22} color={colors.destructive} />
-            <Text style={[styles.quickLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
-              Police
-            </Text>
-            <Text style={[styles.quickNum, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              100
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
-            onPress={() => Linking.openURL("tel:108")}
-          >
-            <Feather name="activity" size={22} color="#F44336" />
-            <Text style={[styles.quickLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
-              Ambulance
-            </Text>
-            <Text style={[styles.quickNum, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              108
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
-            onPress={() => Linking.openURL("tel:1091")}
-          >
-            <Feather name="shield" size={22} color={colors.primary} />
-            <Text style={[styles.quickLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
-              Helpline
-            </Text>
-            <Text style={[styles.quickNum, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              1091
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
-            onPress={() => router.push("/fake-call")}
-          >
+        {/* Quick actions — Fake Call only */}
+        <Pressable
+          style={[styles.fakeCallCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
+          onPress={() => router.push("/fake-call")}
+        >
+          <View style={[styles.fakeCallIcon, { backgroundColor: "#9C27B015" }]}>
             <Feather name="phone-incoming" size={22} color="#9C27B0" />
-            <Text style={[styles.quickLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.fakeCallLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
               Fake Call
             </Text>
-            <Text style={[styles.quickNum, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              Escape
+            <Text style={[styles.fakeCallSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+              Simulate an incoming call to escape a situation
             </Text>
-          </Pressable>
-        </View>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </Pressable>
 
         {/* First contact quick call */}
         {contacts.length > 0 && (
@@ -358,26 +307,18 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        {contacts.length === 0 && (
-          <Pressable
-            style={[
-              styles.addContactBanner,
-              { backgroundColor: colors.accentForeground + "10", borderRadius: 20, borderColor: colors.primary + "30", borderWidth: 1 },
-            ]}
-            onPress={() => router.push("/(tabs)/contacts")}
-          >
-            <Feather name="user-plus" size={22} color={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bannerTitle, { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>
-                Add Emergency Contacts
-              </Text>
-              <Text style={[styles.bannerSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                They'll receive your SOS alert
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={colors.primary} />
-          </Pressable>
-        )}
+        {/* Shake hint */}
+        <View
+          style={[
+            styles.shakeHint,
+            { backgroundColor: colors.accentForeground + "10", borderRadius: 14, borderColor: colors.border, borderWidth: 1 },
+          ]}
+        >
+          <Feather name="smartphone" size={16} color={colors.mutedForeground} />
+          <Text style={[styles.shakeHintText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+            Shake your phone 3 times to trigger SOS
+          </Text>
+        </View>
       </ScrollView>
 
       <CountdownModal
@@ -418,9 +359,6 @@ const styles = StyleSheet.create({
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   statusText: { fontSize: 12 },
   statusDivider: { width: 1, height: 16 },
-  sosSection: { alignItems: "center", paddingVertical: 24, gap: 16 },
-  sosHint: { fontSize: 14, marginTop: 8 },
-  sosHint2: { fontSize: 12, marginTop: -8 },
   card: { padding: 20 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
   cardIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
@@ -447,16 +385,22 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   startBtnText: { fontSize: 15 },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  quickCard: {
-    width: "47%",
-    padding: 18,
+  fakeCallCard: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    padding: 18,
+    gap: 14,
     borderWidth: 1,
   },
-  quickLabel: { fontSize: 14 },
-  quickNum: { fontSize: 12 },
+  fakeCallIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fakeCallLabel: { fontSize: 15 },
+  fakeCallSub: { fontSize: 12, marginTop: 2 },
   quickContact: {
     flexDirection: "row",
     alignItems: "center",
@@ -480,12 +424,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  addContactBanner: {
+  shakeHint: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 18,
-    gap: 14,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  bannerTitle: { fontSize: 14 },
-  bannerSub: { fontSize: 12 },
+  shakeHintText: { fontSize: 13, flex: 1 },
 });

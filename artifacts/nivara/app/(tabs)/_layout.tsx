@@ -1,35 +1,50 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
+let isGlassAvailable = false;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const glassEffect = require("expo-glass-effect");
+  isGlassAvailable =
+    Platform.OS === "ios" &&
+    typeof glassEffect?.isLiquidGlassAvailable === "function" &&
+    glassEffect.isLiquidGlassAvailable();
+} catch {
+  isGlassAvailable = false;
+}
+
 function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="contacts">
-        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-        <Label>Contacts</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="nearby">
-        <Icon sf={{ default: "mappin.circle", selected: "mappin.circle.fill" }} />
-        <Label>Nearby</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Settings</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { NativeTabs, Icon, Label } = require("expo-router/unstable-native-tabs");
+    return (
+      <NativeTabs>
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "house", selected: "house.fill" }} />
+          <Label>Home</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="contacts">
+          <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+          <Label>Contacts</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="nearby">
+          <Icon sf={{ default: "mappin.circle", selected: "mappin.circle.fill" }} />
+          <Label>Nearby</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="settings">
+          <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+          <Label>Settings</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    );
+  } catch {
+    return <ClassicTabLayout />;
+  }
 }
 
 function ClassicTabLayout() {
@@ -62,10 +77,7 @@ function ClassicTabLayout() {
             />
           ) : isWeb ? (
             <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
             />
           ) : null,
       }}
@@ -74,48 +86,28 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="contacts"
         options={{
           title: "Contacts",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={24} />
-            ) : (
-              <Feather name="users" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="nearby"
         options={{
           title: "Nearby",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="mappin.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="map-pin" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <Feather name="map-pin" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="gearshape" tintColor={color} size={24} />
-            ) : (
-              <Feather name="settings" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} />,
         }}
       />
     </Tabs>
@@ -123,7 +115,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
+  if (isGlassAvailable) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
