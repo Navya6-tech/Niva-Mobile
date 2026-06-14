@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "NIVARA Safety App"
+version = "1.0.0"
+id = "artifacts/nivara"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 19635
+
+[services.development]
+run = "pnpm --filter @workspace/nivara run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nivara", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/nivara", "run", "serve" ]
+
+[services.env]
+PORT = "19635"
+BASE_PATH = "/"

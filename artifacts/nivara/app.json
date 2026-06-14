@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "NIVARA",
+    "slug": "nivara",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "nivara",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "NIVARA needs your location to share it with emergency contacts when SOS is triggered.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "NIVARA needs your location to share it with emergency contacts during an emergency.",
+        "NSMicrophoneUsageDescription": "NIVARA uses the microphone for voice trigger detection.",
+        "NSMotionUsageDescription": "NIVARA uses motion sensors to detect shaking for SOS activation."
+      }
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "SEND_SMS",
+        "RECORD_AUDIO",
+        "RECEIVE_BOOT_COMPLETED",
+        "FOREGROUND_SERVICE",
+        "VIBRATE",
+        "HIGH_SAMPLING_RATE_SENSORS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

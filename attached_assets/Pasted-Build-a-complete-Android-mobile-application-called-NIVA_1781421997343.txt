@@ -1,0 +1,176 @@
+Build a complete Android mobile application called NIVARA — a women's personal safety app. 
+The app name is NIVARA and it has a pink/rose brand identity (primary color: #E91E8C or similar hot pink). 
+The logo will be provided separately as an asset.
+
+=== CORE ARCHITECTURE ===
+- Platform: Android only (Native Android / React Native / Flutter — whichever runs best in this environment)
+- Backend: Firebase (Firestore + Firebase Auth + Firebase Cloud Messaging)
+- Language: Kotlin (native) OR Dart (Flutter) OR JavaScript/TypeScript (React Native) — choose the most stable option
+- Maps: Google Maps API
+- SMS: Android's native SmsManager API (automatic, no user confirmation dialog, no SMS app opened)
+- Voice/Speech: Android SpeechRecognizer API (on-device, background mode)
+
+=== FEATURE 1 — VOICE TRIGGER SYSTEM ===
+- User can add custom trigger phrases (e.g., "help", "stop", "leave me alone", "bachao")
+- App continuously listens in the background using Android foreground service
+- When a trigger phrase is detected:
+  → Start a 10-second countdown shown on screen (cancel button visible)
+  → If user does NOT cancel within 10 seconds → trigger full SOS flow
+  → If user cancels → stop and return to standby
+- Optimized for low battery usage (use on-device recognition, not cloud API)
+- Works even when phone screen is off / app is in background
+- Optional: detect raised voice / distress tone using audio amplitude analysis
+
+=== FEATURE 2 — SOS EMERGENCY ALERT SYSTEM ===
+When SOS is triggered (via voice or manual button):
+1. Get current GPS coordinates
+2. Generate Google Maps link: https://maps.google.com/?q=LAT,LNG
+3. Automatically send SMS (using Android SmsManager, NO user prompt) to ALL saved SOS contacts:
+
+   Message format:
+   "🚨 NIVARA EMERGENCY ALERT
+   I may need help. Please reach me immediately.
+   📍 My live location: https://maps.google.com/?q=LAT,LNG
+   🕐 Time: [HH:MM DD/MM/YYYY]
+   🔋 Battery: [XX%]
+   — Sent via NIVARA Safety App"
+
+4. Start continuous live location tracking (update every 60 seconds, send updated location link every 5 minutes)
+5. Optionally start background audio recording and save to local storage
+6. Show stealth notification (small, discreet) that SOS is active
+7. Add a "I'm Safe" button to stop the SOS session
+
+=== FEATURE 3 — EMERGENCY CONTACTS ===
+- User can save up to 5 emergency contacts (name + phone number)
+- Contacts stored locally + synced to Firebase for backup
+- One-tap call any contact
+- All SOS contacts receive the SMS alert simultaneously
+- Manage contacts screen: add, edit, delete
+
+=== FEATURE 4 — NEARBY EMERGENCY SERVICES (GPS) ===
+Use Google Maps API / Places API to show:
+- 🏥 Nearby Hospitals (with distance, address, phone number, directions button)
+- 🚓 Nearby Police Stations
+- 🚑 Ambulance services
+- 💊 Nearby Pharmacies
+
+Display as a card list sorted by distance. Each card has:
+- Name
+- Distance (e.g., "1.2 km away")
+- One-tap Call button
+- One-tap Directions button (opens Google Maps)
+
+Also include a static section for India emergency numbers:
+- Police: 100
+- Ambulance: 108
+- Women Helpline: 1091
+- Emergency (unified): 112
+
+=== FEATURE 5 — QUICK SOS PANEL (LOCK SCREEN ACCESSIBLE) ===
+A floating emergency panel with large, high-contrast buttons:
+- 🔴 SOS — triggers full alert system
+- 📞 Call Police (dials 100)
+- 🚑 Call Ambulance (dials 108)
+- 👤 Call Emergency Contact #1
+
+This panel must be accessible from the lock screen or via a persistent floating button overlay.
+
+=== FEATURE 6 — SMART SAFETY FEATURES ===
+A. Check-In Timer:
+   - User sets a timer (e.g., "I'll be home in 30 minutes")
+   - If user doesn't tap "I'm Safe" before timer ends → auto-trigger SOS
+   - Countdown visible on home screen
+
+B. Inactivity Detection:
+   - If phone hasn't moved (accelerometer) for more than X minutes in an unusual hour (e.g., 11PM–5AM) → send check-in notification
+   - If no response in 2 minutes → trigger SOS
+
+C. Shake-to-SOS:
+   - Detect 3+ rapid shakes using accelerometer → trigger SOS countdown
+
+=== FEATURE 7 — FAKE CALL FEATURE ===
+- User can schedule a fake incoming call (e.g., "in 1 minute")
+- Phone rings as if receiving a real call
+- Shows a fake caller name/number (customizable)
+- Useful for escaping uncomfortable situations
+
+=== FEATURE 8 — STEALTH MODE ===
+- When stealth mode is ON:
+  → App shows no visible alert on screen during SOS
+  → Screen appears normal (can show a fake clock/home screen overlay)
+  → SOS runs completely silently in background
+- Toggle stealth mode in settings
+
+=== FEATURE 9 — PRIVACY & SECURITY ===
+- All location data encrypted in transit (HTTPS/TLS)
+- Audio recordings stored only locally, auto-deleted after 72 hours unless manually saved
+- No continuous audio recording — only during active SOS
+- Clear permission flow on first launch (mic, GPS, SMS, contacts)
+- Option to set a PIN or biometric lock for the app settings
+
+=== APP SCREENS / NAVIGATION ===
+
+1. Splash Screen — NIVARA logo (pink on white), fade-in animation
+2. Onboarding (3 slides):
+   - "Your voice is your shield" — voice trigger setup
+   - "Trusted hands around you" — add emergency contacts
+   - "Help is always near" — nearby services intro
+3. Home Screen:
+   - Big SOS button (center, red/pink pulsing animation)
+   - Check-in timer widget
+   - Quick access: Contacts | Nearby Help | Settings
+   - Status bar: voice trigger ON/OFF toggle
+4. Emergency Contacts Screen
+5. Nearby Help Screen (map + card list)
+6. Settings Screen:
+   - Trigger phrases (add/edit/delete)
+   - Stealth mode toggle
+   - Check-in timer default duration
+   - Shake sensitivity
+   - Audio recording toggle
+   - Auto-delete duration
+   - App PIN/biometric lock
+7. SOS Active Screen (shown during alert):
+   - "ALERT SENT" message
+   - Live location updating indicator
+   - "I'm Safe — Stop SOS" button
+   - Timer showing how long SOS has been active
+
+=== DESIGN SYSTEM ===
+- Primary color: #E91E8C (hot pink — matching NIVARA logo)
+- Secondary: #FF80AB (soft pink)
+- Background: #FFFFFF (white)
+- Text: #212121 (dark)
+- Danger/SOS: #D32F2F (red)
+- Font: Poppins (headings) + Inter (body)
+- Border radius: 16px (cards), 50% (SOS button — circular)
+- SOS button: large circular button, pulsing red glow animation, minimum 120px diameter
+
+=== PERMISSIONS REQUIRED ===
+- RECORD_AUDIO — voice trigger listening
+- ACCESS_FINE_LOCATION — GPS tracking
+- SEND_SMS — emergency alerts
+- READ_CONTACTS — contact picker (optional)
+- RECEIVE_BOOT_COMPLETED — restart background service after reboot
+- FOREGROUND_SERVICE — keep voice detection alive
+- VIBRATE — SOS alert feedback
+- USE_BIOMETRIC — app lock (optional)
+
+=== TECHNICAL REQUIREMENTS ===
+- Background voice detection must survive: screen off, app backgrounded, phone restart
+- SMS must send automatically — use Android SmsManager, NOT Intent.ACTION_SENDTO
+- GPS must work in background using a Foreground Service with location updates
+- Target Android 8.0+ (API 26+), handle Android 12+ background restrictions
+- Handle all permission denials gracefully with clear explanations
+- App must not crash if GPS or SMS temporarily unavailable
+- Firebase Firestore: store user profile, contacts, settings (synced)
+- Firebase Auth: simple phone number or email auth for backup/restore
+- Optimize battery: use WorkManager for periodic tasks, not continuous polling
+
+=== IMPORTANT NOTES ===
+- App name: NIVARA
+- Tagline: "Your safety, always within reach."
+- India-specific: default emergency numbers for India (100, 108, 1091, 112)
+- The app is built for real-world use — prioritize reliability over flashy design
+- Every critical feature (SOS send, voice trigger, GPS) must have error handling and a fallback
+- Include comments in code explaining each module clearly
