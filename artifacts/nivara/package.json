@@ -58,7 +58,7 @@
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
     "expo-av": "^16.0.8",
-    "expo-sensors": "^56.0.6",
-    "expo-sms": "^56.0.3"
+    "expo-sensors": "~15.0.8",
+    "expo-sms": "~14.0.8"
   }
 }

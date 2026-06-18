@@ -405,11 +405,11 @@ importers:
         specifier: ^16.0.8
         version: 16.0.8(expo@54.0.35)(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       expo-sensors:
-        specifier: ^56.0.6
-        version: 56.0.6(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
+        specifier: ~15.0.8
+        version: 15.0.8(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
       expo-sms:
-        specifier: ^56.0.3
-        version: 56.0.3(expo@54.0.35)
+        specifier: ~14.0.8
+        version: 14.0.8(expo@54.0.35)
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -3533,8 +3533,8 @@ packages:
       react-server-dom-webpack:
         optional: true
 
-  expo-sensors@56.0.6:
-    resolution: {integrity: sha512-06a3m+OLA6W0P58KROIqd3NdfamDcKNXcipLV2WAFJcZdtJh67RAkT9TW/vgw0HjYNY3d7Cb05YNp9dNELDH9A==}
+  expo-sensors@15.0.8:
+    resolution: {integrity: sha512-ttibOSCYjFAMIfjV+vVukO1v7GKlbcPRfxcRqbTaSMGneewDwVSXbGFImY530fj1BR3mWq4n9jHnuDp8tAEY9g==}
     peerDependencies:
       expo: '*'
       react-native: '*'
@@ -3543,8 +3543,8 @@ packages:
     resolution: {integrity: sha512-mcmyML3oXcqFUXUxtdtCL1O00ztNI2v76d+MdniXRUgHNxIcHZ05zo+DqBaOOT6LQnPk4vA4YHqQl7iGUfRb3g==}
     engines: {node: '>=20.16.0'}
 
-  expo-sms@56.0.3:
-    resolution: {integrity: sha512-jfKMFtIDfOQ7d4z9Bjgn8N6zX3hTSYYga9DNLo1I2gR5aUwPxq8SguuPzLckVmPsPRl2v5BmIBOBIeY3mBxlZg==}
+  expo-sms@14.0.8:
+    resolution: {integrity: sha512-yNdUUP4Y+arvQByXsSzY8UFPadezxcFPH4u1Ubab2VIRNmDJZf7TIAFmDi8dAbm5CPxbzjKBEbBIkmkVKppHHA==}
     peerDependencies:
       expo: '*'
 
@@ -9456,7 +9456,7 @@ snapshots:
       - '@types/react-dom'
       - supports-color
 
-  expo-sensors@56.0.6(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)):
+  expo-sensors@15.0.8(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)):
     dependencies:
       expo: 54.0.35(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       invariant: 2.2.4
@@ -9464,7 +9464,7 @@ snapshots:
 
   expo-server@1.0.7: {}
 
-  expo-sms@56.0.3(expo@54.0.35):
+  expo-sms@14.0.8(expo@54.0.35):
     dependencies:
       expo: 54.0.35(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
 
