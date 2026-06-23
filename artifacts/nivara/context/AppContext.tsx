@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useBackgroundProtection } from "@/hooks/useBackgroundProtection";
 
 export interface EmergencyContact {
   id: string;
@@ -131,6 +132,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSettings(updated);
     await AsyncStorage.setItem("settings", JSON.stringify(updated));
   }, [settings]);
+
+  useBackgroundProtection(settings.backgroundProtectionEnabled);
 
   const triggerSOS = useCallback(() => {
     setSosActive(true);

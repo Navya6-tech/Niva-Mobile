@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.nivara.safety",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
@@ -35,8 +35,10 @@
         "RECORD_AUDIO",
         "RECEIVE_BOOT_COMPLETED",
         "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MICROPHONE",
         "VIBRATE",
-        "HIGH_SAMPLING_RATE_SENSORS"
+        "HIGH_SAMPLING_RATE_SENSORS",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -50,7 +52,15 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E91E8C",
+          "defaultChannel": "nivara-protection-channel"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
