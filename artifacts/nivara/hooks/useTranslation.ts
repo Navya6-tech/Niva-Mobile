@@ -91,6 +91,7 @@ const T = {
     bgWarningTitle: "Disable Background Protection?",
     cancel: "Cancel",
     confirm: "Confirm",
+    delete: "Delete",
 
     chooseLanguageBilingual: "Choose your language / अपनी भाषा चुनें",
     continueInEnglish: "Continue in English",
@@ -190,6 +191,7 @@ const T = {
     bgWarningTitle: "बैकग्राउंड सुरक्षा बंद करें?",
     cancel: "रद्द करें",
     confirm: "पुष्टि करें",
+    delete: "हटाएं",
 
     chooseLanguageBilingual: "Choose your language / अपनी भाषा चुनें",
     continueInEnglish: "Continue in English",

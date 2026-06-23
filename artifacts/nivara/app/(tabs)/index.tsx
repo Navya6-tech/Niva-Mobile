@@ -18,6 +18,7 @@ import { useApp } from "@/context/AppContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { CountdownModal } from "@/components/CountdownModal";
 import { useShakeDetector } from "@/hooks/useShakeDetector";
+import { useVoiceTrigger } from "@/hooks/useVoiceTrigger";
 import {
   RecordingMeta,
   loadRecordings,
@@ -103,6 +104,15 @@ export default function HomeScreen() {
 
   useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible, handleShakeCount);
 
+  const handleVoiceSOS = useCallback(() => {
+    if (!countdownVisible) setCountdownVisible(true);
+  }, [countdownVisible]);
+
+  useVoiceTrigger(
+    settings.voiceTriggerActive && Platform.OS !== "web",
+    handleVoiceSOS
+  );
+
   const handleVoiceToggle = useCallback(() => {
     if (Platform.OS === "web") {
       Alert.alert(
@@ -114,7 +124,7 @@ export default function HomeScreen() {
     }
     try {
       updateSettings({ voiceTriggerActive: !settings.voiceTriggerActive });
-      if (!settings.voiceTriggerActive && Platform.OS !== "web") {
+      if (!settings.voiceTriggerActive) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch {
