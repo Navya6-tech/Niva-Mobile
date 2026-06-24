@@ -58,10 +58,10 @@
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
     "expo-av": "^16.0.8",
-    "expo-background-fetch": "^56.0.19",
-    "expo-notifications": "^56.0.18",
+    "expo-background-fetch": "~14.0.9",
+    "expo-notifications": "~0.32.17",
     "expo-sensors": "~15.0.8",
     "expo-sms": "~14.0.8",
-    "expo-task-manager": "^56.0.19"
+    "expo-task-manager": "~14.0.9"
   }
 }
