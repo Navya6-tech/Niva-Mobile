@@ -1,11 +1,14 @@
 import * as BackgroundFetch from "expo-background-fetch";
+import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import { BACKGROUND_PROTECTION_TASK } from "@/tasks/backgroundProtection";
+import {
+  BACKGROUND_PROTECTION_TASK,
+  LOCATION_TASK_NAME,
+} from "@/tasks/backgroundProtection";
 
-const NOTIFICATION_ID = "nivara-protection";
 const CHANNEL_ID = "nivara-protection-channel";
 
 export async function setupNotificationChannel() {
@@ -24,49 +27,53 @@ export async function requestNotificationPermissions() {
   await Notifications.requestPermissionsAsync({ android: {}, ios: {} });
 }
 
-export async function showProtectionNotification() {
-  if (Platform.OS === "web") return;
-  try {
-    await Notifications.dismissNotificationAsync(NOTIFICATION_ID);
-  } catch {}
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_ID,
-    content: {
-      title: "🛡️ NIVARA is protecting you",
-      body: 'Shake 3× or say "bachao" to trigger SOS',
-      sticky: true,
-      data: { type: "protection" },
-      ...(Platform.OS === "android"
-        ? {
-            android: {
-              channelId: CHANNEL_ID,
-              ongoing: true,
-              sticky: true,
-              smallIcon: "notification_icon",
-              color: "#E91E8C",
-              priority: Notifications.AndroidNotificationPriority.LOW,
-            },
-          }
-        : {}),
+async function startLocationForegroundService() {
+  const { status: fgStatus } =
+    await Location.requestForegroundPermissionsAsync();
+  if (fgStatus !== "granted") return false;
+
+  const { status: bgStatus } =
+    await Location.requestBackgroundPermissionsAsync();
+  if (bgStatus !== "granted") return false;
+
+  const already = await Location.hasStartedLocationUpdatesAsync(
+    LOCATION_TASK_NAME
+  );
+  if (already) return true;
+
+  await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+    accuracy: Location.Accuracy.Lowest,
+    timeInterval: 15000,
+    distanceInterval: 0,
+    pausesUpdatesAutomatically: false,
+    foregroundService: {
+      notificationTitle: "🛡️ NIVARA is protecting you",
+      notificationBody: 'Shake 3× or say "bachao" to trigger SOS',
+      notificationColor: "#E91E8C",
     },
-    trigger: null,
+    showsBackgroundLocationIndicator: false,
   });
+
+  return true;
 }
 
-export async function hideProtectionNotification() {
-  if (Platform.OS === "web") return;
+async function stopLocationForegroundService() {
   try {
-    await Notifications.dismissNotificationAsync(NOTIFICATION_ID);
+    const running = await Location.hasStartedLocationUpdatesAsync(
+      LOCATION_TASK_NAME
+    );
+    if (running) {
+      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+    }
   } catch {}
 }
 
-export async function startBackgroundTask() {
-  if (Platform.OS === "web") return;
+async function startHeartbeatTask() {
   try {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(
+    const isReg = await TaskManager.isTaskRegisteredAsync(
       BACKGROUND_PROTECTION_TASK
     );
-    if (!isRegistered) {
+    if (!isReg) {
       await BackgroundFetch.registerTaskAsync(BACKGROUND_PROTECTION_TASK, {
         minimumInterval: 60,
         stopOnTerminate: false,
@@ -76,13 +83,12 @@ export async function startBackgroundTask() {
   } catch {}
 }
 
-export async function stopBackgroundTask() {
-  if (Platform.OS === "web") return;
+async function stopHeartbeatTask() {
   try {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(
+    const isReg = await TaskManager.isTaskRegisteredAsync(
       BACKGROUND_PROTECTION_TASK
     );
-    if (isRegistered) {
+    if (isReg) {
       await BackgroundFetch.unregisterTaskAsync(BACKGROUND_PROTECTION_TASK);
     }
   } catch {}
@@ -93,14 +99,18 @@ export function useBackgroundProtection(enabled: boolean) {
     if (Platform.OS === "web") return;
 
     if (enabled) {
-      requestNotificationPermissions().then(async () => {
+      const enable = async () => {
+        await requestNotificationPermissions();
         await setupNotificationChannel();
-        await showProtectionNotification();
-        await startBackgroundTask();
-      });
+        const started = await startLocationForegroundService();
+        if (!started) {
+          await startHeartbeatTask();
+        }
+      };
+      enable();
     } else {
-      hideProtectionNotification();
-      stopBackgroundTask();
+      stopLocationForegroundService();
+      stopHeartbeatTask();
     }
   }, [enabled]);
 }

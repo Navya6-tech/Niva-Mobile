@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.nivara.safety",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
@@ -31,10 +31,12 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
         "SEND_SMS",
         "RECORD_AUDIO",
         "RECEIVE_BOOT_COMPLETED",
         "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "FOREGROUND_SERVICE_MICROPHONE",
         "VIBRATE",
         "HIGH_SAMPLING_RATE_SENSORS",
@@ -53,6 +55,14 @@
       ],
       "expo-font",
       "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NIVARA needs background location access to keep you protected even when the app is minimized.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
       [
         "expo-notifications",
         {
