@@ -1,6 +1,5 @@
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
-import * as SMS from "expo-sms";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -116,10 +115,17 @@ export default function SOSActiveScreen() {
     }
 
     try {
-      const isAvailable = await SMS.isAvailableAsync();
-      if (isAvailable) {
-        await SMS.sendSMSAsync(phones, message);
+      const domain = process.env["EXPO_PUBLIC_DOMAIN"];
+      const apiBase = domain ? `https://${domain}/api` : "/api";
+      const resp = await fetch(`${apiBase}/sos/send-sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phones, message }),
+      });
+      if (resp.ok) {
         setSmsSent(true);
+      } else {
+        setSmsSent(false);
       }
     } catch {
       setSmsSent(false);
