@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Platform,
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
+import { requestAllPermissions } from "@/hooks/usePermissions";
 
 const { width } = Dimensions.get("window");
 
@@ -47,9 +49,10 @@ export default function OnboardingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { updateSettings, settings } = useApp();
-  const [step, setStep] = useState<"language" | "slides">("language");
+  const [step, setStep] = useState<"language" | "slides" | "permissions">("language");
   const [selectedLang, setSelectedLang] = useState<"en" | "hi">("en");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [requesting, setRequesting] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   const lang = settings.language ?? "en";
@@ -65,7 +68,7 @@ export default function OnboardingScreen() {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
-      handleGetStarted();
+      setStep("permissions");
     }
   };
 
@@ -74,8 +77,88 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleAllowPermissions = async () => {
+    setRequesting(true);
+    await requestAllPermissions();
+    setRequesting(false);
+    await handleGetStarted();
+  };
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  if (step === "permissions") {
+    const perms = [
+      { icon: "bell" as const, labelEn: "Notifications", labelHi: "नोटिफिकेशन", descEn: "Background protection alerts", descHi: "बैकग्राउंड सुरक्षा अलर्ट" },
+      { icon: "mic" as const, labelEn: "Microphone", labelHi: "माइक्रोफोन", descEn: "Voice trigger detection", descHi: "वॉइस ट्रिगर डिटेक्शन" },
+      { icon: "map-pin" as const, labelEn: "Location", labelHi: "लोकेशन", descEn: "Share with emergency contacts", descHi: "आपातकालीन संपर्कों से साझा करें" },
+      { icon: "shield" as const, labelEn: "Background Location", labelHi: "बैकग्राउंड लोकेशन", descEn: "Stay protected when app is minimized", descHi: "ऐप मिनिमाइज़ होने पर भी सुरक्षित रहें" },
+    ];
+
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
+        <View style={styles.header}>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.logoText}>N</Text>
+          </View>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
+        </View>
+
+        <View style={styles.permBody}>
+          <View style={[styles.permIconCircle, { backgroundColor: colors.primary + "15" }]}>
+            <Feather name="shield" size={52} color={colors.primary} />
+          </View>
+          <Text style={[styles.permTitle, { color: colors.foreground, fontFamily: "Poppins_700Bold" }]}>
+            {isHi ? "NIVARA को अनुमति दें" : "Allow NIVARA to\nprotect you"}
+          </Text>
+          <Text style={[styles.permSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+            {isHi ? "ये अनुमतियाँ आपकी सुरक्षा के लिए ज़रूरी हैं" : "These permissions are required for your safety"}
+          </Text>
+
+          <View style={styles.permList}>
+            {perms.map((p) => (
+              <View key={p.icon} style={[styles.permRow, { backgroundColor: colors.card, borderRadius: 14 }]}>
+                <View style={[styles.permIconBox, { backgroundColor: colors.primary + "18" }]}>
+                  <Feather name={p.icon} size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.permLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
+                    {isHi ? p.labelHi : p.labelEn}
+                  </Text>
+                  <Text style={[styles.permDesc, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+                    {isHi ? p.descHi : p.descEn}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
+          <Pressable
+            style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100, opacity: requesting ? 0.7 : 1 }]}
+            onPress={handleAllowPermissions}
+            disabled={requesting}
+          >
+            {requesting
+              ? <ActivityIndicator color="#fff" />
+              : <>
+                  <Text style={[styles.nextText, { color: "#fff", fontFamily: "Poppins_600SemiBold" }]}>
+                    {isHi ? "सभी अनुमतियाँ दें" : "Allow All Permissions"}
+                  </Text>
+                  <Feather name="check" size={20} color="#fff" />
+                </>
+            }
+          </Pressable>
+          <Pressable onPress={handleGetStarted} style={styles.skipButton}>
+            <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+              {isHi ? "अभी छोड़ें" : "Skip for now"}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   if (step === "language") {
     return (
@@ -324,4 +407,37 @@ const styles = StyleSheet.create({
   nextText: { fontSize: 17 },
   skipButton: { paddingVertical: 8 },
   skipText: { fontSize: 14 },
+  permBody: {
+    flex: 1,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  permIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  permTitle: { fontSize: 26, textAlign: "center", lineHeight: 36 },
+  permSub: { fontSize: 14, textAlign: "center", marginBottom: 8 },
+  permList: { width: "100%", gap: 10 },
+  permRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 14,
+  },
+  permIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  permLabel: { fontSize: 15 },
+  permDesc: { fontSize: 12, marginTop: 2 },
 });
