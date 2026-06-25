@@ -41,6 +41,7 @@ export default function SOSActiveScreen() {
   const [elapsed, setElapsed] = useState(0);
   const [locationText, setLocationText] = useState("Getting location...");
   const [smsState, setSmsState] = useState<"idle" | "sending" | "sent" | "failed" | "denied">("idle");
+  const [smsError, setSmsError] = useState<string | null>(null);
   const [locationLink, setLocationLink] = useState<string | null>(null);
   const lastLatLng = useRef<{ lat: string; lng: string } | null>(null);
   const pulse = useRef(new Animated.Value(1)).current;
@@ -130,13 +131,16 @@ export default function SOSActiveScreen() {
       );
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
         setSmsState("denied");
+        setSmsError(`Permission result: ${granted}`);
         return;
       }
       const { sendSMS } = require("direct-sms") as { sendSMS: (phones: string[], msg: string) => void };
       sendSMS(phones, message);
       setSmsState("sent");
-    } catch {
+      setSmsError(null);
+    } catch (e: unknown) {
       setSmsState("failed");
+      setSmsError(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -219,13 +223,18 @@ export default function SOSActiveScreen() {
                   : smsState === "sending"
                   ? "Sending..."
                   : smsState === "denied"
-                  ? "Permission denied — tap to retry"
+                  ? "Permission denied — tap ↻ to retry"
                   : smsState === "failed"
-                  ? "Failed — tap to retry"
+                  ? "Failed — tap ↻ to retry"
                   : contacts.length === 0
                   ? "No contacts added"
                   : "Waiting..."}
               </Text>
+              {smsError != null && (
+                <Text style={{ color: "#FF5252", fontSize: 10, fontFamily: "Poppins_400Regular", marginTop: 4 }} selectable>
+                  {smsError}
+                </Text>
+              )}
             </View>
             {smsState === "sent" && <Feather name="check-circle" size={18} color="#4CAF50" />}
             {(smsState === "failed" || smsState === "denied") && (
