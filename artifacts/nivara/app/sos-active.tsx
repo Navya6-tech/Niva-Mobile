@@ -115,14 +115,9 @@ export default function SOSActiveScreen() {
     }
 
     try {
-      const domain = process.env["EXPO_PUBLIC_DOMAIN"];
-      const apiBase = domain ? `https://${domain}/api` : "/api";
-      const resp = await fetch(`${apiBase}/sos/send-sms`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phones, message }),
-      });
-      if (resp.ok) {
+      if (Platform.OS === "android") {
+        const { sendSMS } = require("direct-sms") as { sendSMS: (phones: string[], msg: string) => void };
+        sendSMS(phones, message);
         setSmsSent(true);
       } else {
         setSmsSent(false);
