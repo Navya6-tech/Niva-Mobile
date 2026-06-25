@@ -42,6 +42,7 @@ export default function SOSActiveScreen() {
   const [locationText, setLocationText] = useState("Getting location...");
   const [smsState, setSmsState] = useState<"idle" | "sending" | "sent" | "failed" | "denied">("idle");
   const [locationLink, setLocationLink] = useState<string | null>(null);
+  const lastLatLng = useRef<{ lat: string; lng: string } | null>(null);
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -83,7 +84,10 @@ export default function SOSActiveScreen() {
       const link = `https://maps.google.com/?q=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
       setLocationLink(link);
       setLocationText(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-      buildAndSendSMS(latitude.toFixed(6), longitude.toFixed(6));
+      const lat = latitude.toFixed(6);
+      const lng = longitude.toFixed(6);
+      lastLatLng.current = { lat, lng };
+      buildAndSendSMS(lat, lng);
     } catch {
       setLocationText("Could not get location");
       buildAndSendSMS("unknown", "unknown");
@@ -91,10 +95,10 @@ export default function SOSActiveScreen() {
   };
 
   const buildAndSendSMS = async (lat: string, lng: string) => {
-    if (contacts.length === 0) {
-      setSmsSent(false);
-      return;
-    }
+    if (contacts.length === 0) return;
+
+    setSmsState("sending");
+
     const now = new Date();
     const link =
       lat === "unknown"
@@ -110,28 +114,29 @@ export default function SOSActiveScreen() {
     const phones = contacts.map((c) => c.phone);
 
     if (Platform.OS === "web") {
-      setSmsSent(true);
+      setSmsState("sent");
+      return;
+    }
+
+    if (Platform.OS !== "android") {
+      setSmsState("failed");
       return;
     }
 
     try {
-      if (Platform.OS === "android") {
-        const { PermissionsAndroid } = require("react-native") as typeof import("react-native");
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.SEND_SMS
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          setSmsSent(false);
-          return;
-        }
-        const { sendSMS } = require("direct-sms") as { sendSMS: (phones: string[], msg: string) => void };
-        sendSMS(phones, message);
-        setSmsSent(true);
-      } else {
-        setSmsSent(false);
+      const { PermissionsAndroid } = require("react-native") as typeof import("react-native");
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.SEND_SMS
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        setSmsState("denied");
+        return;
       }
+      const { sendSMS } = require("direct-sms") as { sendSMS: (phones: string[], msg: string) => void };
+      sendSMS(phones, message);
+      setSmsState("sent");
     } catch {
-      setSmsSent(false);
+      setSmsState("failed");
     }
   };
 
@@ -199,20 +204,38 @@ export default function SOSActiveScreen() {
 
         <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16 }]}>
           <View style={styles.cardRow}>
-            <Feather name="message-circle" size={18} color={smsSent ? "#4CAF50" : colors.secondary} />
+            <Feather
+              name="message-circle"
+              size={18}
+              color={smsState === "sent" ? "#4CAF50" : smsState === "denied" || smsState === "failed" ? "#FF5252" : colors.secondary}
+            />
             <View style={styles.cardInfo}>
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.5)", fontFamily: "Poppins_400Regular" }]}>
                 Alert SMS
               </Text>
               <Text style={[styles.cardValue, { color: "#fff", fontFamily: "Poppins_500Medium" }]}>
-                {smsSent
+                {smsState === "sent"
                   ? `Sent to ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`
+                  : smsState === "sending"
+                  ? "Sending..."
+                  : smsState === "denied"
+                  ? "Permission denied — tap to retry"
+                  : smsState === "failed"
+                  ? "Failed — tap to retry"
                   : contacts.length === 0
                   ? "No contacts added"
-                  : "Sending..."}
+                  : "Waiting..."}
               </Text>
             </View>
-            {smsSent && <Feather name="check-circle" size={18} color="#4CAF50" />}
+            {smsState === "sent" && <Feather name="check-circle" size={18} color="#4CAF50" />}
+            {(smsState === "failed" || smsState === "denied") && (
+              <Pressable onPress={() => {
+                const ll = lastLatLng.current;
+                buildAndSendSMS(ll?.lat ?? "unknown", ll?.lng ?? "unknown");
+              }}>
+                <Feather name="refresh-cw" size={18} color="#FF5252" />
+              </Pressable>
+            )}
           </View>
         </View>
 
