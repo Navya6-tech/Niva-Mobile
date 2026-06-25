@@ -116,6 +116,14 @@ export default function SOSActiveScreen() {
 
     try {
       if (Platform.OS === "android") {
+        const { PermissionsAndroid } = require("react-native") as typeof import("react-native");
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.SEND_SMS
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setSmsSent(false);
+          return;
+        }
         const { sendSMS } = require("direct-sms") as { sendSMS: (phones: string[], msg: string) => void };
         sendSMS(phones, message);
         setSmsSent(true);

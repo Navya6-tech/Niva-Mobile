@@ -1,6 +1,6 @@
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, PermissionsAndroid } from "react-native";
 
 export async function requestAllPermissions() {
   if (Platform.OS === "web") return;
@@ -21,4 +21,19 @@ export async function requestAllPermissions() {
       await Location.requestBackgroundPermissionsAsync();
     }
   } catch {}
+
+  if (Platform.OS === "android") {
+    try {
+      await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.SEND_SMS,
+        {
+          title: "Send SMS Permission",
+          message:
+            "NIVARA needs permission to send emergency SMS messages automatically when SOS is triggered.",
+          buttonPositive: "Allow",
+          buttonNegative: "Deny",
+        }
+      );
+    } catch {}
+  }
 }
