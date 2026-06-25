@@ -40,7 +40,7 @@ export default function SOSActiveScreen() {
   const { contacts, sosStartTime, markSafe } = useApp();
   const [elapsed, setElapsed] = useState(0);
   const [locationText, setLocationText] = useState("Getting location...");
-  const [smsSent, setSmsSent] = useState(false);
+  const [smsState, setSmsState] = useState<"idle" | "sending" | "sent" | "failed" | "denied">("idle");
   const [locationLink, setLocationLink] = useState<string | null>(null);
   const pulse = useRef(new Animated.Value(1)).current;
 
