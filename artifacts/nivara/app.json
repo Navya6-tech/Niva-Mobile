@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.nivara.safety",
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
@@ -47,6 +47,7 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
+      "./plugins/direct-sms-plugin",
       [
         "expo-router",
         {
