@@ -47,7 +47,6 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="sos-active" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="fake-call" options={{ headerShown: false }} />
       <Stack.Screen name="recordings" options={{ headerShown: false }} />
     </Stack>
   );

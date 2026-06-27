@@ -73,9 +73,6 @@ export default function SettingsScreen() {
   const { t, lang } = useTranslation();
   const [newPhrase, setNewPhrase] = useState("");
   const [showPhraseInput, setShowPhraseInput] = useState(false);
-  const [fakeNameEdit, setFakeNameEdit] = useState(false);
-  const [fakeName, setFakeName] = useState(settings.fakeCallerName);
-
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -102,11 +99,6 @@ export default function SettingsScreen() {
     await updateSettings({
       triggerPhrases: settings.triggerPhrases.filter((p) => p !== phrase),
     });
-  };
-
-  const saveFakeName = async () => {
-    await updateSettings({ fakeCallerName: fakeName });
-    setFakeNameEdit(false);
   };
 
   const handleBgToggle = (v: boolean) => {
@@ -332,50 +324,6 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
             ))}
-          </View>
-        </View>
-
-        {/* Fake call */}
-        <SectionHeader title={t("fakeCallSection")} />
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
-          <View style={styles.settingRow}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
-              <Feather name="phone-incoming" size={18} color="#9C27B0" />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                {t("callerName")}
-              </Text>
-              {fakeNameEdit ? (
-                <View style={styles.fakeNameRow}>
-                  <TextInput
-                    value={fakeName}
-                    onChangeText={setFakeName}
-                    style={[
-                      styles.fakeNameInput,
-                      {
-                        color: colors.foreground,
-                        borderColor: colors.primary,
-                        fontFamily: "Poppins_400Regular",
-                      },
-                    ]}
-                    autoFocus
-                  />
-                  <Pressable onPress={saveFakeName}>
-                    <Feather name="check" size={18} color={colors.primary} />
-                  </Pressable>
-                </View>
-              ) : (
-                <Text style={[styles.settingSubLabel, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                  {settings.fakeCallerName}
-                </Text>
-              )}
-            </View>
-            {!fakeNameEdit && (
-              <Pressable onPress={() => { setFakeName(settings.fakeCallerName); setFakeNameEdit(true); }}>
-                <Feather name="edit-2" size={16} color={colors.mutedForeground} />
-              </Pressable>
-            )}
           </View>
         </View>
 

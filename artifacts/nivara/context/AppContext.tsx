@@ -24,8 +24,6 @@ export interface AppSettings {
   audioRecording: boolean;
   voiceTriggerActive: boolean;
   onboardingComplete: boolean;
-  fakeCallerName: string;
-  fakeCallerNumber: string;
   language: "en" | "hi";
   backgroundProtectionEnabled: boolean;
 }
@@ -61,8 +59,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   audioRecording: false,
   voiceTriggerActive: false,
   onboardingComplete: false,
-  fakeCallerName: "Mom",
-  fakeCallerNumber: "+91 98765 43210",
   language: "en",
   backgroundProtectionEnabled: true,
 };

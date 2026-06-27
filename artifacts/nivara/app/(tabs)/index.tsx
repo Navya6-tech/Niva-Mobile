@@ -1,5 +1,4 @@
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -370,25 +369,6 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Fake Call */}
-        <Pressable
-          style={[styles.fakeCallCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 20 }]}
-          onPress={() => router.push("/fake-call")}
-        >
-          <View style={[styles.fakeCallIcon, { backgroundColor: "#9C27B015" }]}>
-            <Feather name="phone-incoming" size={22} color="#9C27B0" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.fakeCallLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
-              {t("fakeCall")}
-            </Text>
-            <Text style={[styles.fakeCallSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              {t("fakeCallSub")}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-        </Pressable>
-
         {/* First contact quick call */}
         {contacts.length > 0 && (
           <Pressable
@@ -592,13 +572,6 @@ const styles = StyleSheet.create({
     justifyContent: "center", gap: 8, paddingVertical: 14,
   },
   startBtnText: { fontSize: 15 },
-  fakeCallCard: {
-    flexDirection: "row", alignItems: "center",
-    padding: 18, gap: 14, borderWidth: 1,
-  },
-  fakeCallIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  fakeCallLabel: { fontSize: 15 },
-  fakeCallSub: { fontSize: 12, marginTop: 2 },
   quickContact: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
   contactAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   avatarText: { color: "#fff", fontSize: 18 },
