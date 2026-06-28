@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useNativeBackgroundService } from "@/hooks/useNativeBackgroundService";
 import { CountdownModal } from "@/components/CountdownModal";
 import { useShakeDetector } from "@/hooks/useShakeDetector";
 import { useVoiceTrigger } from "@/hooks/useVoiceTrigger";
@@ -110,6 +111,14 @@ export default function HomeScreen() {
   useVoiceTrigger(
     settings.voiceTriggerActive && Platform.OS !== "web",
     handleVoiceSOS
+  );
+
+  // Native background service for shake+voice when app is in background
+  useNativeBackgroundService(
+    settings.backgroundProtectionEnabled && Platform.OS === "android",
+    (source) => {
+      if (!countdownVisible) setCountdownVisible(true);
+    }
   );
 
   const handleVoiceToggle = useCallback(() => {

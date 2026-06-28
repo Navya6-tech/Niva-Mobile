@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import { AppState, Platform } from "react-native";
 
-const LOUD_THRESHOLD_DB = -20;
-const SUSTAINED_MS = 600;
+const LOUD_THRESHOLD_DB = -30;   // was -20, now more sensitive
+const SUSTAINED_MS = 1500;       // was 600ms, now needs 1.5s of sustained sound
 const CHECK_INTERVAL_MS = 100;
-const SEGMENT_DURATION_MS = 4000;
+const SEGMENT_DURATION_MS = 5000;
 
 export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
   const activeRef = useRef(active);
@@ -34,6 +34,12 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
     try {
       const { Audio } = require("expo-av") as typeof import("expo-av");
 
+      // Make sure any previous recording is fully stopped first
+      if (recordingRef.current) {
+        try { await recordingRef.current.stopAndUnloadAsync(); } catch {}
+        recordingRef.current = null;
+      }
+
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -45,7 +51,6 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
         undefined,
         CHECK_INTERVAL_MS
       );
-
       recordingRef.current = recording;
       loudStartRef.current = null;
 
@@ -63,6 +68,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
               onTriggeredRef.current();
             }
           } else {
+            // Reset if sound drops below threshold
             loudStartRef.current = null;
           }
         }).catch(() => {});
@@ -76,6 +82,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
         triggeredRef.current = false;
         startSegment();
       }, SEGMENT_DURATION_MS);
+
     } catch {
       if (activeRef.current) {
         restartTimerRef.current = setTimeout(() => startSegment(), 1500);
@@ -89,7 +96,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
     const sub = AppState.addEventListener("change", (state) => {
       if (!activeRef.current) return;
       if (state === "active") {
-        startSegment();
+        cleanup().then(() => startSegment());
       }
     });
 

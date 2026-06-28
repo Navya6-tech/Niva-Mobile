@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useNativeBackgroundService } from "@/hooks/useNativeBackgroundService";
 import { useBackgroundProtection } from "@/hooks/useBackgroundProtection";
 
 export interface EmergencyContact {
@@ -134,6 +135,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const triggerSOS = useCallback(() => {
     setSosActive(true);
     setSosStartTime(Date.now());
+    setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
     router.push("/sos-active");
   }, []);
 

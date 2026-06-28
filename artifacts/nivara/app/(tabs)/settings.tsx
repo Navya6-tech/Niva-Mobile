@@ -423,8 +423,6 @@ const styles = StyleSheet.create({
   durationRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 14, paddingTop: 0 },
   durationChip: { paddingHorizontal: 14, paddingVertical: 7 },
   durationText: { fontSize: 13 },
-  fakeNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  fakeNameInput: { flex: 1, fontSize: 14, borderBottomWidth: 1, paddingVertical: 2 },
   bgNote: {
     flexDirection: "row", gap: 8, padding: 12, alignItems: "flex-start",
     borderBottomLeftRadius: 18, borderBottomRightRadius: 18,

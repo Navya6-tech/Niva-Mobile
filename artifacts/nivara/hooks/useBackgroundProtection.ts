@@ -28,51 +28,41 @@ export async function requestNotificationPermissions() {
 }
 
 async function startLocationForegroundService() {
-  const { status: fgStatus } =
-    await Location.requestForegroundPermissionsAsync();
+  const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
   if (fgStatus !== "granted") return false;
 
-  const { status: bgStatus } =
-    await Location.requestBackgroundPermissionsAsync();
+  const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
   if (bgStatus !== "granted") return false;
 
-  const already = await Location.hasStartedLocationUpdatesAsync(
-    LOCATION_TASK_NAME
-  );
+  const already = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
   if (already) return true;
 
   await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
     accuracy: Location.Accuracy.Lowest,
-    timeInterval: 15000,
+    timeInterval: 5000,        // every 5s to keep JS thread alive
     distanceInterval: 0,
     pausesUpdatesAutomatically: false,
+    showsBackgroundLocationIndicator: false,
     foregroundService: {
-      notificationTitle: "🛡️ NIVARA is protecting you",
+      notificationTitle: "🛡 NIVARA is protecting you",
       notificationBody: 'Shake 3× or say "bachao" to trigger SOS',
       notificationColor: "#E91E8C",
+      notificationIdentifier: "nivara-fg-service",
     },
-    showsBackgroundLocationIndicator: false,
   });
-
   return true;
 }
 
 async function stopLocationForegroundService() {
   try {
-    const running = await Location.hasStartedLocationUpdatesAsync(
-      LOCATION_TASK_NAME
-    );
-    if (running) {
-      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    }
+    const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+    if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
   } catch {}
 }
 
 async function startHeartbeatTask() {
   try {
-    const isReg = await TaskManager.isTaskRegisteredAsync(
-      BACKGROUND_PROTECTION_TASK
-    );
+    const isReg = await TaskManager.isTaskRegisteredAsync(BACKGROUND_PROTECTION_TASK);
     if (!isReg) {
       await BackgroundFetch.registerTaskAsync(BACKGROUND_PROTECTION_TASK, {
         minimumInterval: 60,
@@ -85,12 +75,8 @@ async function startHeartbeatTask() {
 
 async function stopHeartbeatTask() {
   try {
-    const isReg = await TaskManager.isTaskRegisteredAsync(
-      BACKGROUND_PROTECTION_TASK
-    );
-    if (isReg) {
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_PROTECTION_TASK);
-    }
+    const isReg = await TaskManager.isTaskRegisteredAsync(BACKGROUND_PROTECTION_TASK);
+    if (isReg) await BackgroundFetch.unregisterTaskAsync(BACKGROUND_PROTECTION_TASK);
   } catch {}
 }
 
@@ -104,6 +90,7 @@ export function useBackgroundProtection(enabled: boolean) {
         await setupNotificationChannel();
         const started = await startLocationForegroundService();
         if (!started) {
+          // fallback to heartbeat if location permission denied
           await startHeartbeatTask();
         }
       };
