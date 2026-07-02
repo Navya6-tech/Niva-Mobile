@@ -7,10 +7,9 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "apk"
       },
-      "prebuildCommand": "echo skip"
+      "prebuildCommand": "npx expo prebuild --platform android --clean"
     },
     "production": {
       "android": {
