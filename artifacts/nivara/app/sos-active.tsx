@@ -136,23 +136,31 @@ export default function SOSActiveScreen() {
       const rec = recordingRef.current;
       recordingRef.current = null;
       await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-      if (uri) {
-        recordingUriRef.current = uri;
-        setRecordingUri(uri);
+      const tempUri = rec.getURI();
+      if (tempUri) {
+        // Copy to permanent location so it survives after screen unmounts
+        const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        const permanentUri = FileSystem.documentDirectory + 'sos_recording_' + id + '.m4a';
+        await FileSystem.copyAsync({ from: tempUri, to: permanentUri });
+
+        recordingUriRef.current = permanentUri;
+        setRecordingUri(permanentUri);
         setRecordingState("stopped");
-        const info = await FileSystem.getInfoAsync(uri, { size: true });
+
+        const info = await FileSystem.getInfoAsync(permanentUri, { size: true });
         const size = (info as { size?: number }).size ?? 0;
         const durationMs = recordingMsRef.current || (Date.now() - (recordingStart.current ?? Date.now()));
+
         await saveRecordingMeta({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          uri,
+          id,
+          uri: permanentUri,
           date: Date.now(),
           durationMs,
           size,
           keepForever: false,
         });
-        return uri;
+
+        return permanentUri;
       }
     } catch (e) {
       console.error("Stop recording error:", e);
