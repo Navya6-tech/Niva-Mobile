@@ -71,7 +71,8 @@
           "color": "#E91E8C",
           "defaultChannel": "nivara-protection-channel"
         }
-      ]
+      ],
+      "./plugins/native-background-service"
     ],
     "experiments": {
       "typedRoutes": true
