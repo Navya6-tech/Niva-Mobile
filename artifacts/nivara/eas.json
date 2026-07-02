@@ -9,7 +9,8 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
-      }
+      },
+      "prebuildCommand": "echo skip"
     },
     "production": {
       "android": {

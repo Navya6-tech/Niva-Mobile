@@ -41,11 +41,7 @@
         "VIBRATE",
         "HIGH_SAMPLING_RATE_SENSORS",
         "POST_NOTIFICATIONS"
-      ],
-      "foregroundService": {
-        "notificationChannelId": "nivara-protection-channel",
-        "notificationColor": "#E91E8C"
-      }
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
