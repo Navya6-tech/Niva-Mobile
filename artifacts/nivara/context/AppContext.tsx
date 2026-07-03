@@ -151,8 +151,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(null);
     if (checkInRef.current) clearTimeout(checkInRef.current);
     setCheckInTimer({ active: false, duration: 30, startTime: null });
-    setSafeTimestamp(Date.now());
     router.back();
+    // Delay reload so recording has time to finish saving to AsyncStorage
+    setTimeout(() => setSafeTimestamp(Date.now()), 1500);
   }, []);
 
   const startCheckIn = useCallback((minutes: number) => {
