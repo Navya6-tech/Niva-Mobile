@@ -49,6 +49,7 @@ export default function HomeScreen() {
     startCheckIn,
     stopCheckIn,
     updateSettings,
+    safeTimestamp,
   } = useApp();
 
   const [countdownVisible, setCountdownVisible] = useState(false);
@@ -76,7 +77,7 @@ export default function HomeScreen() {
       list.sort((a, b) => b.date - a.date);
       setRecordings(list);
     });
-  }, []);
+  }, [safeTimestamp]);
 
   useEffect(() => {
     if (shakeCount > 0) {

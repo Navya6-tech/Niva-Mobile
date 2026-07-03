@@ -39,6 +39,7 @@ interface AppContextType {
   contacts: EmergencyContact[];
   settings: AppSettings;
   sosActive: boolean;
+  safeTimestamp: number;
   sosStartTime: number | null;
   checkInTimer: CheckInTimer;
   addContact: (contact: Omit<EmergencyContact, "id">) => Promise<void>;
@@ -70,6 +71,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [sosActive, setSosActive] = useState(false);
+  const [safeTimestamp, setSafeTimestamp] = useState(0);
   const [sosStartTime, setSosStartTime] = useState<number | null>(null);
   const [checkInTimer, setCheckInTimer] = useState<CheckInTimer>({
     active: false,
@@ -149,6 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(null);
     if (checkInRef.current) clearTimeout(checkInRef.current);
     setCheckInTimer({ active: false, duration: 30, startTime: null });
+    setSafeTimestamp(Date.now());
     router.back();
   }, []);
 
