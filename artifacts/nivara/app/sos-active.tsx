@@ -131,33 +131,36 @@ export default function SOSActiveScreen() {
       recordingRef.current = null;
       await rec.stopAndUnloadAsync();
       const tempUri = rec.getURI();
-
       if (tempUri) {
-        // Copy to permanent storage so it persists after screen unmounts
-        const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-        const permanentUri = FileSystem.documentDirectory + "sos_" + id + ".m4a";
-        await FileSystem.copyAsync({ from: tempUri, to: permanentUri });
-
-        recordingUriRef.current = permanentUri;
-        setRecordingUri(permanentUri);
-        setRecordingState("stopped");
-
-        const info = await FileSystem.getInfoAsync(permanentUri, { size: true });
-        const size = (info.size ?? 0);
-        const durationMs = recordingMsRef.current || (Date.now() - (recordingStart.current ?? Date.now()));
-
-        await saveRecordingMeta({
-          id,
-          uri: permanentUri,
-          date: Date.now(),
-          durationMs,
-          size,
-          keepForever: false,
-        });
-
-        console.log("Recording saved:", permanentUri, "size:", size, "duration:", durationMs);
-        return permanentUri;
-      }
+        try {
+          const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+          const permanentUri = FileSystem.documentDirectory + "sos_" + id + ".m4a";          await FileSystem.copyAsync({ from: tempUri, to: permanentUri });
+          const info = await FileSystem.getInfoAsync(permanentUri, { size: true });
+          const size = (info.size ?? 0);
+          const durationMs = recordingMsRef.current || (Date.now() - (recordingStart.current ?? Date.now()));
+          await saveRecordingMeta({
+            id,
+            uri: permanentUri,
+            date: Date.now(),
+            durationMs,
+            size,
+            keepForever: false,
+          });
+          recordingUriRef.current = permanentUri;
+          setRecordingUri(permanentUri);
+          setRecordingState("stopped");
+          return permanentUri;
+        } catch (copyErr) {          // Fallback: save original temp URI directly
+          try {
+            const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+            const durationMs = recordingMsRef.current || (Date.now() - (recordingStart.current ?? Date.now()));
+            await saveRecordingMeta({ id, uri: tempUri, date: Date.now(), durationMs, size: 0, keepForever: false });            recordingUriRef.current = tempUri;
+            setRecordingUri(tempUri);
+            setRecordingState("stopped");
+            return tempUri;
+          } catch (fallbackErr) {          }
+        }
+      } else {      }
     } catch (e) {
       console.error("Stop recording error:", e);
     } finally {
