@@ -9,6 +9,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
   const onTriggeredRef = useRef(onTriggered);
   const triggeredRef = useRef(false);
   const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isListening = useRef(false);
   const phrasesRef = useRef(settings.triggerPhrases);
 
   activeRef.current = active;
@@ -16,52 +17,87 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
   phrasesRef.current = settings.triggerPhrases;
 
   const startListening = useCallback(async () => {
-    if (!activeRef.current || Platform.OS === "web") return;
+    if (!activeRef.current || Platform.OS === "web" || isListening.current) return;
+    if (restartTimer.current) { clearTimeout(restartTimer.current); restartTimer.current = null; }
     try {
       const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!granted) return;
+      isListening.current = true;
       await ExpoSpeechRecognitionModule.start({
         lang: "en-IN",
-        continuous: true,
+        continuous: false,
         interimResults: true,
         requiresOnDeviceRecognition: false,
+        addsPunctuation: false,
       });
     } catch (e) {
+      isListening.current = false;
       if (activeRef.current) {
-        restartTimer.current = setTimeout(() => startListening(), 2000);
+        restartTimer.current = setTimeout(() => startListening(), 1000);
       }
     }
   }, []);
 
   const stopListening = useCallback(async () => {
-    try { await ExpoSpeechRecognitionModule.stop(); } catch (e) {}
+    isListening.current = false;
     if (restartTimer.current) { clearTimeout(restartTimer.current); restartTimer.current = null; }
+    try { await ExpoSpeechRecognitionModule.stop(); } catch (e) {}
     triggeredRef.current = false;
   }, []);
 
-  useSpeechRecognitionEvent("result", (event) => {
-    if (!activeRef.current || triggeredRef.current) return;
-    const transcript = (event.results?.[0]?.transcript ?? "").toLowerCase().trim();
-    if (!transcript) return;
-
+  const checkTranscript = useCallback((transcript: string) => {
+    if (!activeRef.current || triggeredRef.current || !transcript) return;
+    const t = transcript.toLowerCase().trim();
     const phrases = phrasesRef.current;
-    const matched = phrases.some(phrase => transcript.includes(phrase.toLowerCase()));
+    
+    // Check exact match or partial match
+    const matched = phrases.some(phrase => {
+      const p = phrase.toLowerCase().trim();
+      return t.includes(p) || p.includes(t) || similarity(t, p) > 0.7;
+    });
+
     if (matched) {
       triggeredRef.current = true;
       onTriggeredRef.current();
       setTimeout(() => { triggeredRef.current = false; }, 10000);
     }
-  });
+  }, []);
 
-  useSpeechRecognitionEvent("end", () => {
-    if (activeRef.current) {
-      restartTimer.current = setTimeout(() => startListening(), 300);
+  // Fuzzy match — handles slight mispronunciations
+  function similarity(a: string, b: string): number {
+    if (a === b) return 1;
+    if (a.length === 0 || b.length === 0) return 0;
+    const longer = a.length > b.length ? a : b;
+    const shorter = a.length > b.length ? b : a;
+    if (longer.length === 0) return 1;
+    let matches = 0;
+    for (let i = 0; i < shorter.length; i++) {
+      if (longer.includes(shorter[i])) matches++;
+    }
+    return matches / longer.length;
+  }
+
+  useSpeechRecognitionEvent("result", (event) => {
+    const results = event.results ?? [];
+    for (const r of results) {
+      checkTranscript(r.transcript ?? "");
     }
   });
 
-  useSpeechRecognitionEvent("error", () => {
+  useSpeechRecognitionEvent("end", () => {
+    isListening.current = false;
+    // Immediately restart - no gap in listening
     if (activeRef.current) {
-      restartTimer.current = setTimeout(() => startListening(), 1500);
+      restartTimer.current = setTimeout(() => startListening(), 100);
+    }
+  });
+
+  useSpeechRecognitionEvent("error", (event) => {
+    isListening.current = false;
+    // Restart quickly on error
+    if (activeRef.current) {
+      const delay = event.error === "no-speech" ? 100 : 1000;
+      restartTimer.current = setTimeout(() => startListening(), delay);
     }
   });
 
