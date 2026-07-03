@@ -1,115 +1,78 @@
 import { useEffect, useRef, useCallback } from "react";
-import { AppState, Platform } from "react-native";
-
-const LOUD_THRESHOLD_DB = -30;   // was -20, now more sensitive
-const SUSTAINED_MS = 1500;       // was 600ms, now needs 1.5s of sustained sound
-const CHECK_INTERVAL_MS = 100;
-const SEGMENT_DURATION_MS = 5000;
+import { Platform } from "react-native";
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
+import { useApp } from "@/context/AppContext";
 
 export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
+  const { settings } = useApp();
   const activeRef = useRef(active);
   const onTriggeredRef = useRef(onTriggered);
-  const recordingRef = useRef<InstanceType<typeof import("expo-av").Audio.Recording> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loudStartRef = useRef<number | null>(null);
   const triggeredRef = useRef(false);
+  const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phrasesRef = useRef(settings.triggerPhrases);
 
   activeRef.current = active;
   onTriggeredRef.current = onTriggered;
+  phrasesRef.current = settings.triggerPhrases;
 
-  const cleanup = useCallback(async () => {
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
-    if (recordingRef.current) {
-      try { await recordingRef.current.stopAndUnloadAsync(); } catch {}
-      recordingRef.current = null;
+  const startListening = useCallback(async () => {
+    if (!activeRef.current || Platform.OS === "web") return;
+    try {
+      const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!granted) return;
+      await ExpoSpeechRecognitionModule.start({
+        lang: "en-IN",
+        continuous: true,
+        interimResults: true,
+        requiresOnDeviceRecognition: false,
+      });
+    } catch (e) {
+      if (activeRef.current) {
+        restartTimer.current = setTimeout(() => startListening(), 2000);
+      }
     }
-    loudStartRef.current = null;
+  }, []);
+
+  const stopListening = useCallback(async () => {
+    try { await ExpoSpeechRecognitionModule.stop(); } catch (e) {}
+    if (restartTimer.current) { clearTimeout(restartTimer.current); restartTimer.current = null; }
     triggeredRef.current = false;
   }, []);
 
-  const startSegment = useCallback(async () => {
-    if (!activeRef.current || Platform.OS === "web") return;
-    try {
-      const { Audio } = require("expo-av") as typeof import("expo-av");
+  useSpeechRecognitionEvent("result", (event) => {
+    if (!activeRef.current || triggeredRef.current) return;
+    const transcript = (event.results?.[0]?.transcript ?? "").toLowerCase().trim();
+    if (!transcript) return;
 
-      // Make sure any previous recording is fully stopped first
-      if (recordingRef.current) {
-        try { await recordingRef.current.stopAndUnloadAsync(); } catch {}
-        recordingRef.current = null;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: true },
-        undefined,
-        CHECK_INTERVAL_MS
-      );
-      recordingRef.current = recording;
-      loudStartRef.current = null;
-
-      intervalRef.current = setInterval(() => {
-        if (!activeRef.current) return;
-        recording.getStatusAsync().then((s) => {
-          if (!s.isRecording) return;
-          const db = (s as { metering?: number }).metering ?? -160;
-          const now = Date.now();
-          if (db >= LOUD_THRESHOLD_DB) {
-            if (loudStartRef.current === null) {
-              loudStartRef.current = now;
-            } else if (now - loudStartRef.current >= SUSTAINED_MS && !triggeredRef.current) {
-              triggeredRef.current = true;
-              onTriggeredRef.current();
-            }
-          } else {
-            // Reset if sound drops below threshold
-            loudStartRef.current = null;
-          }
-        }).catch(() => {});
-      }, CHECK_INTERVAL_MS);
-
-      restartTimerRef.current = setTimeout(async () => {
-        if (!activeRef.current) return;
-        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-        try { await recording.stopAndUnloadAsync(); } catch {}
-        recordingRef.current = null;
-        triggeredRef.current = false;
-        startSegment();
-      }, SEGMENT_DURATION_MS);
-
-    } catch {
-      if (activeRef.current) {
-        restartTimerRef.current = setTimeout(() => startSegment(), 1500);
-      }
+    const phrases = phrasesRef.current;
+    const matched = phrases.some(phrase => transcript.includes(phrase.toLowerCase()));
+    if (matched) {
+      triggeredRef.current = true;
+      onTriggeredRef.current();
+      setTimeout(() => { triggeredRef.current = false; }, 10000);
     }
-  }, []);
+  });
+
+  useSpeechRecognitionEvent("end", () => {
+    if (activeRef.current) {
+      restartTimer.current = setTimeout(() => startListening(), 300);
+    }
+  });
+
+  useSpeechRecognitionEvent("error", () => {
+    if (activeRef.current) {
+      restartTimer.current = setTimeout(() => startListening(), 1500);
+    }
+  });
 
   useEffect(() => {
     if (Platform.OS === "web") return;
-
-    const sub = AppState.addEventListener("change", (state) => {
-      if (!activeRef.current) return;
-      if (state === "active") {
-        cleanup().then(() => startSegment());
-      }
-    });
-
     if (active) {
       triggeredRef.current = false;
-      startSegment();
+      startListening();
     } else {
-      cleanup();
+      stopListening();
     }
-
-    return () => {
-      sub.remove();
-      cleanup();
-    };
-  }, [active, startSegment, cleanup]);
+    return () => { stopListening(); };
+  }, [active, startListening, stopListening]);
 }
