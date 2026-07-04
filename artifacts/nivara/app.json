@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.nivara.safety",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
@@ -72,7 +72,8 @@
           "defaultChannel": "nivara-protection-channel"
         }
       ],
-      "./plugins/native-background-service"
+      "./plugins/native-background-service",
+      "expo-speech-recognition"
     ],
     "experiments": {
       "typedRoutes": true
