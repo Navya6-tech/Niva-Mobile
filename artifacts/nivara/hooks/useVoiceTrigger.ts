@@ -24,11 +24,12 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
       if (!granted) return;
       isListening.current = true;
       await ExpoSpeechRecognitionModule.start({
-        lang: "en-IN",
+        lang: "hi-IN",
         continuous: false,
         interimResults: true,
         requiresOnDeviceRecognition: false,
         addsPunctuation: false,
+        ielanguages: ["hi-IN", "en-IN", "en-US"],
       });
     } catch (e) {
       isListening.current = false;
