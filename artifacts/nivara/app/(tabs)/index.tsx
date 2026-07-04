@@ -119,7 +119,8 @@ export default function HomeScreen() {
     settings.backgroundProtectionEnabled && Platform.OS === "android",
     (source) => {
       if (!countdownVisible) setCountdownVisible(true);
-    }
+    },
+    settings.triggerPhrases
   );
 
   const handleVoiceToggle = useCallback(() => {

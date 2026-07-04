@@ -10,11 +10,12 @@ import android.content.*
 import android.hardware.*
 import android.media.*
 import android.os.*
+import android.speech.*
 import androidx.core.app.NotificationCompat
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-class NivaraBackgroundService : Service(), SensorEventListener {
+class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListener {
     companion object {
         const val CHANNEL_ID = "nivara-protection-channel"
         const val NOTIF_ID = 1001
@@ -22,20 +23,28 @@ class NivaraBackgroundService : Service(), SensorEventListener {
         const val ACTION_STOP = "STOP_PROTECTION"
         const val ACTION_SOS = "com.nivara.safety.SOS_TRIGGERED"
         const val EXTRA_SOURCE = "source"
+        const val ACTION_UPDATE_PHRASES = "UPDATE_PHRASES"
+        const val EXTRA_PHRASES = "phrases"
         private const val SHAKE_THRESHOLD = 12.0f
         private const val SHAKE_COUNT_NEEDED = 3
         private const val SHAKE_WINDOW_MS = 2000L
         private const val SHAKE_COOLDOWN_MS = 100L
-        private const val SAMPLE_RATE = 44100
-        private const val LOUD_THRESHOLD = 8000
-        private const val SUSTAINED_MS = 1500L
     }
+
+    // Shake
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var shakeCount = 0; private var shakeWindowStart = 0L; private var lastShakeTime = 0L
     private var lastX = 0f; private var lastY = 0f; private var lastZ = 0f; private var firstReading = true
-    private var audioRecord: AudioRecord? = null; private var voiceThread: Thread? = null
-    private var voiceActive = false; private var loudStart = 0L
+
+    // Speech recognition
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var triggerPhrases = mutableListOf("help me", "stop", "bachao")
+    private var isListening = false
+    private val restartHandler = Handler(Looper.getMainLooper())
+    private val restartRunnable = Runnable { startSpeechRecognition() }
+
+    // Wake lock
     private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
@@ -45,18 +54,28 @@ class NivaraBackgroundService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) { stopSelf(); return START_NOT_STICKY }
-        startProtection(); return START_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_UPDATE_PHRASES -> {
+                val phrases = intent.getStringArrayListExtra(EXTRA_PHRASES)
+                if (phrases != null) { triggerPhrases = phrases }
+            }
+            else -> startProtection()
+        }
+        return START_STICKY
     }
 
     private fun startProtection() {
-        createNotificationChannel(); startForeground(NOTIF_ID, buildNotification())
+        createNotificationChannel()
+        startForeground(NOTIF_ID, buildNotification())
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nivara:protection"); wakeLock?.acquire()
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nivara:protection")
+        wakeLock?.acquire()
         accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
-        startVoiceDetection()
+        startSpeechRecognition()
     }
 
+    // ── Shake ─────────────────────────────────────────────────────
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
         val x = event.values[0]; val y = event.values[1]; val z = event.values[2]
@@ -73,39 +92,75 @@ class NivaraBackgroundService : Service(), SensorEventListener {
     }
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    private fun startVoiceDetection() {
-        val bufSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        try {
-            audioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize * 4)
-            audioRecord?.startRecording(); voiceActive = true
-            voiceThread = Thread {
-                val buf = ShortArray(bufSize); loudStart = 0L
-                while (voiceActive) {
-                    val read = audioRecord?.read(buf, 0, buf.size) ?: 0
-                    if (read > 0) {
-                        var max = 0
-                        for (i in 0 until read) { val v = abs(buf[i].toInt()); if (v > max) max = v }
-                        val now = System.currentTimeMillis()
-                        if (max > LOUD_THRESHOLD) {
-                            if (loudStart == 0L) loudStart = now
-                            else if (now - loudStart >= SUSTAINED_MS) { loudStart = 0L; triggerSOS("voice") }
-                        } else loudStart = 0L
-                    }
-                }
-            }; voiceThread?.start()
-        } catch (e: Exception) { e.printStackTrace() }
+    // ── Speech Recognition ────────────────────────────────────────
+    private fun startSpeechRecognition() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
+        restartHandler.removeCallbacks(restartRunnable)
+        
+        // Destroy old instance
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        isListening = false
+
+        Handler(Looper.getMainLooper()).post {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            speechRecognizer?.setRecognitionListener(this)
+            
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "en-US"))
+            }
+            speechRecognizer?.startListening(intent)
+            isListening = true
+        }
     }
 
-    private fun stopVoiceDetection() {
-        voiceActive = false
-        try { audioRecord?.stop(); audioRecord?.release() } catch (e: Exception) {}
-        audioRecord = null; voiceThread?.interrupt(); voiceThread = null
+    private fun checkTranscript(text: String) {
+        val t = text.lowercase().trim()
+        val matched = triggerPhrases.any { phrase -> t.contains(phrase.lowercase().trim()) }
+        if (matched) triggerSOS("voice")
     }
 
+    // RecognitionListener callbacks
+    override fun onResults(results: Bundle?) {
+        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        matches?.forEach { checkTranscript(it) }
+        isListening = false
+        restartHandler.postDelayed(restartRunnable, 300)
+    }
+
+    override fun onPartialResults(partialResults: Bundle?) {
+        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        matches?.forEach { checkTranscript(it) }
+    }
+
+    override fun onError(error: Int) {
+        isListening = false
+        val delay = if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 300L else 1500L
+        restartHandler.postDelayed(restartRunnable, delay)
+    }
+
+    override fun onEndOfSpeech() { isListening = false }
+    override fun onBeginningOfSpeech() {}
+    override fun onRmsChanged(rmsdB: Float) {}
+    override fun onBufferReceived(buffer: ByteArray?) {}
+    override fun onReadyForSpeech(params: Bundle?) {}
+    override fun onEvent(eventType: Int, params: Bundle?) {}
+
+    // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
     private fun triggerSOS(source: String) {
         val now = System.currentTimeMillis()
-        if (now - lastSosTrigger < 5000) return; lastSosTrigger = now
+        if (now - lastSosTrigger < 5000) return
+        lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
         packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -123,12 +178,19 @@ class NivaraBackgroundService : Service(), SensorEventListener {
 
     private fun buildNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
         .setContentTitle("NIVARA is protecting you")
-        .setContentText("Shake 3x or shout to trigger SOS")
+        .setContentText("Shake 3x or say your trigger phrase to activate SOS")
         .setSmallIcon(R.mipmap.ic_launcher)
         .setContentIntent(PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         .setOngoing(true).setPriority(NotificationCompat.PRIORITY_LOW).setSilent(true).build()
 
-    override fun onDestroy() { sensorManager.unregisterListener(this); stopVoiceDetection(); wakeLock?.release(); super.onDestroy() }
+    override fun onDestroy() {
+        sensorManager.unregisterListener(this)
+        restartHandler.removeCallbacks(restartRunnable)
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        wakeLock?.release()
+        super.onDestroy()
+    }
     override fun onBind(intent: Intent?): IBinder? = null
 }`;
 
@@ -177,6 +239,18 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         }
     }
     @ReactMethod fun removeListeners(count: Int) { try { sosReceiver?.let { reactApplicationContext.unregisterReceiver(it) } } catch (e: Exception) {}; sosReceiver = null }
+    @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {
+        try {
+            val list = ArrayList<String>()
+            for (i in 0 until phrases.size()) { list.add(phrases.getString(i)) }
+            val intent = Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply {
+                action = NivaraBackgroundService.ACTION_UPDATE_PHRASES
+                putStringArrayListExtra(NivaraBackgroundService.EXTRA_PHRASES, list)
+            }
+            reactApplicationContext.startService(intent)
+            promise.resolve(true)
+        } catch (e: Exception) { promise.reject("ERROR", e.message) }
+    }
 }`;
 
 const SERVICE_PACKAGE = `package com.nivara.safety
