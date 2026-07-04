@@ -217,13 +217,13 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             val i = Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply { action = NivaraBackgroundService.ACTION_START }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) reactApplicationContext.startForegroundService(i) else reactApplicationContext.startService(i)
             promise.resolve(true)
-        } catch (e: Exception) { promise.reject("ERROR", e.message) }
+        } catch (e: Exception) { promise.reject("ERROR", e.message ?: "Unknown error") }
     }
     @ReactMethod fun stopService(promise: Promise) {
         try {
             reactApplicationContext.startService(Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply { action = NivaraBackgroundService.ACTION_STOP })
             promise.resolve(true)
-        } catch (e: Exception) { promise.reject("ERROR", e.message) }
+        } catch (e: Exception) { promise.reject("ERROR", e.message ?: "Unknown error") }
     }
     @ReactMethod fun addListener(eventName: String) {
         if (eventName == "SOSTriggered" && sosReceiver == null) {
@@ -250,7 +250,7 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             }
             reactApplicationContext.startService(intent)
             promise.resolve(true)
-        } catch (e: Exception) { promise.reject("ERROR", e.message) }
+        } catch (e: Exception) { promise.reject("ERROR", e.message ?: "Unknown error") }
     }
 }`;
 
