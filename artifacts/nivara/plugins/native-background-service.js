@@ -229,7 +229,8 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         if (eventName == "SOSTriggered" && sosReceiver == null) {
             sosReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    val params = Arguments.createMap().apply { putString("source", intent.getStringExtra(NivaraBackgroundService.EXTRA_SOURCE) ?: "unknown") }
+                    val source = intent.getStringExtra(NivaraBackgroundService.EXTRA_SOURCE) ?: "unknown"
+                    val params = Arguments.createMap().apply { putString("source", source) }
                     reactApplicationContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java).emit("SOSTriggered", params)
                 }
             }
