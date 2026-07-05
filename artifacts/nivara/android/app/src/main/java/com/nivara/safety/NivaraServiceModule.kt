@@ -36,7 +36,7 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {
         try {
             val list = ArrayList<String>()
-            for (i in 0 until phrases.size()) { list.add(phrases.getString(i)) }
+            for (i in 0 until phrases.size()) { list.add(phrases.getString(i) ?: "") }
             val intent = Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply {
                 action = NivaraBackgroundService.ACTION_UPDATE_PHRASES
                 putStringArrayListExtra(NivaraBackgroundService.EXTRA_PHRASES, list)
