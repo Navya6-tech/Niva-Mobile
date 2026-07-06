@@ -2,6 +2,7 @@ import { useEffect, useCallback } from "react";
 import { NativeModules, NativeEventEmitter, Platform } from "react-native";
 
 const { NivaraService } = NativeModules;
+console.log("NIVARA NivaraService module:", NivaraService ? "FOUND" : "NOT FOUND");
 
 export function useNativeBackgroundService(
   enabled: boolean,
