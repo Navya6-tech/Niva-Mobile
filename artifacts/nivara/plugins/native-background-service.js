@@ -265,10 +265,15 @@ function withNativeBackgroundService(config) {
   config = withDangerousMod(config, ['android', async (config) => {
     const javaDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/java/com/nivara/safety');
     fs.mkdirSync(javaDir, { recursive: true });
-    fs.writeFileSync(path.join(javaDir, 'NivaraBackgroundService.kt'), BACKGROUND_SERVICE);
-    fs.writeFileSync(path.join(javaDir, 'BootReceiver.kt'), BOOT_RECEIVER);
-    fs.writeFileSync(path.join(javaDir, 'NivaraServiceModule.kt'), SERVICE_MODULE);
-    fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
+    // Only write files if they don't already exist (committed versions take priority)
+    const bgsPath = path.join(javaDir, 'NivaraBackgroundService.kt');
+    const brPath = path.join(javaDir, 'BootReceiver.kt');
+    const smPath = path.join(javaDir, 'NivaraServiceModule.kt');
+    const spPath = path.join(javaDir, 'NivaraServicePackage.kt');
+    if (!fs.existsSync(bgsPath)) fs.writeFileSync(bgsPath, BACKGROUND_SERVICE);
+    if (!fs.existsSync(brPath)) fs.writeFileSync(brPath, BOOT_RECEIVER);
+    if (!fs.existsSync(smPath)) fs.writeFileSync(smPath, SERVICE_MODULE);
+    if (!fs.existsSync(spPath)) fs.writeFileSync(spPath, SERVICE_PACKAGE);
     const mainAppPath = path.join(javaDir, 'MainApplication.kt');
     if (fs.existsSync(mainAppPath)) {
       let content = fs.readFileSync(mainAppPath, 'utf8');

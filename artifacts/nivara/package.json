@@ -66,6 +66,7 @@
     "expo-av": "^16.0.8",
     "expo-background-fetch": "~14.0.9",
     "expo-file-system": "~19.0.23",
+    "expo-intent-launcher": "~13.0.8",
     "expo-modules-core": "~3.0.30",
     "expo-notifications": "~0.32.17",
     "expo-sensors": "~15.0.8",

@@ -10,7 +10,7 @@ export function useNativeBackgroundService(
 ) {
   const start = useCallback(async () => {
     if (Platform.OS !== "android" || !NivaraService) return;
-    try { await NivaraService.startService(); } catch (e) { console.error("Service start error:", e); }
+    try { await NivaraService.startService(); } catch (e) {}
   }, []);
 
   const stop = useCallback(async () => {
@@ -33,9 +33,18 @@ export function useNativeBackgroundService(
     return () => { sub.remove(); };
   }, [enabled, start, stop, onSOSTriggered]);
 
-  // Update phrases whenever they change
   useEffect(() => {
     if (Platform.OS !== "android" || !NivaraService || !enabled || !triggerPhrases) return;
     updatePhrases(triggerPhrases);
   }, [triggerPhrases, enabled, updatePhrases]);
+}
+
+export async function openAccessibilitySettings() {
+  if (Platform.OS !== "android" || !NivaraService) return;
+  try { await NivaraService.openAccessibilitySettings(); } catch (e) {}
+}
+
+export async function isAccessibilityEnabled(): Promise<boolean> {
+  if (Platform.OS !== "android" || !NivaraService) return false;
+  try { return await NivaraService.isAccessibilityEnabled(); } catch (e) { return false; }
 }
