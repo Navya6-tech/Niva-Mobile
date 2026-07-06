@@ -285,6 +285,17 @@ function withNativeBackgroundService(config) {
     }
     return config;
   });
+  config = withMainApplication(config, (config) => {
+    const content = config.modResults.contents;
+    if (!content.includes('NivaraServicePackage')) {
+      config.modResults.contents = content
+        .replace(
+          'add(DirectSmsPackage())',
+          'add(DirectSmsPackage())\n              add(NivaraServicePackage())'
+        );
+    }
+    return config;
+  });
   config = withAndroidManifest(config, (config) => {
     const app = config.modResults.manifest.application[0];
     if (!app.service) app.service = [];
