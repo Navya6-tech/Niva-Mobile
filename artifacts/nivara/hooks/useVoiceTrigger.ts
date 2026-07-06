@@ -27,15 +27,19 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
     if (restartTimer.current) { clearTimeout(restartTimer.current); restartTimer.current = null; }
     try {
       const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      console.log("NIVARA permission granted:", granted);
       if (!granted) return;
       isListening.current = true;
+      console.log("NIVARA starting with phrases:", phrasesRef.current);
       ExpoSpeechRecognitionModule.start({
         lang: "en-IN",
         interimResults: true,
         continuous: true,
         contextualStrings: phrasesRef.current,
       });
+      console.log("NIVARA start called");
     } catch (e) {
+      console.log("NIVARA start error:", e);
       isListening.current = false;
       if (activeRef.current) {
         restartTimer.current = setTimeout(() => startListening(), 2000);
@@ -43,7 +47,12 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
     }
   }, []);
 
+  useSpeechRecognitionEvent("start", () => {
+    console.log("NIVARA recognition started");
+  });
+
   useSpeechRecognitionEvent("result", (event) => {
+    console.log("NIVARA result event:", JSON.stringify(event.results));
     if (!activeRef.current || triggeredRef.current) return;
     for (const r of (event.results ?? [])) {
       const t = (r.transcript ?? "").toLowerCase().trim();
@@ -60,6 +69,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
   });
 
   useSpeechRecognitionEvent("end", () => {
+    console.log("NIVARA recognition ended");
     isListening.current = false;
     if (activeRef.current) {
       restartTimer.current = setTimeout(() => startListening(), 1000);
@@ -67,6 +77,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
   });
 
   useSpeechRecognitionEvent("error", (e) => {
+    console.log("NIVARA recognition error:", e.error, e.message);
     isListening.current = false;
     if (activeRef.current) {
       restartTimer.current = setTimeout(() => startListening(), 2000);
