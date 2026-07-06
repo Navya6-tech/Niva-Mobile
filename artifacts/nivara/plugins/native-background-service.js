@@ -270,17 +270,21 @@ function withNativeBackgroundService(config) {
     fs.writeFileSync(path.join(javaDir, 'BootReceiver.kt'), BOOT_RECEIVER);
     fs.writeFileSync(path.join(javaDir, 'NivaraServiceModule.kt'), SERVICE_MODULE);
     fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
-    const mainAppPath = path.join(javaDir, 'MainApplication.kt');
-    if (fs.existsSync(mainAppPath)) {
-      let content = fs.readFileSync(mainAppPath, 'utf8');
-      if (!content.includes('NivaraServicePackage')) {
-        content = content.replace('add(DirectSmsPackage())', 'add(DirectSmsPackage())\n              add(NivaraServicePackage())');
-        fs.writeFileSync(mainAppPath, content);
-      }
-    }
+    // MainApplication.kt is patched separately via withMainApplication
     return config;
   }]);
 
+  config = withMainApplication(config, (config) => {
+    const content = config.modResults.contents;
+    if (!content.includes('NivaraServicePackage')) {
+      config.modResults.contents = content
+        .replace(
+          'add(DirectSmsPackage())',
+          'add(DirectSmsPackage())\n              add(NivaraServicePackage())'
+        );
+    }
+    return config;
+  });
   config = withAndroidManifest(config, (config) => {
     const app = config.modResults.manifest.application[0];
     if (!app.service) app.service = [];
