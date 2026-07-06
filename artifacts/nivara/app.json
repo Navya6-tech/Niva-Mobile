@@ -18,7 +18,8 @@
         "NSLocationWhenInUseUsageDescription": "NIVARA needs your location to share it with emergency contacts when SOS is triggered.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "NIVARA needs your location to share it with emergency contacts during an emergency.",
         "NSMicrophoneUsageDescription": "NIVARA uses the microphone for voice trigger detection.",
-        "NSMotionUsageDescription": "NIVARA uses motion sensors to detect shaking for SOS activation."
+        "NSMotionUsageDescription": "NIVARA uses motion sensors to detect shaking for SOS activation.",
+        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition."
       }
     },
     "android": {
@@ -40,7 +41,13 @@
         "FOREGROUND_SERVICE_MICROPHONE",
         "VIBRATE",
         "HIGH_SAMPLING_RATE_SENSORS",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -80,8 +87,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "2f84817d-b2f1-4592-a9f4-a9dccfe0d53b"
+        "projectId": "9c521c0e-d538-47e3-ac55-d0ed111b139c"
+      },
+      "router": {
+        "origin": "https://replit.com/"
       }
-    }
+    },
+    "owner": "navssssssssss"
   }
 }
