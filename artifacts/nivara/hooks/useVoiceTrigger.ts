@@ -30,7 +30,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
       if (!granted) return;
       isListening.current = true;
       ExpoSpeechRecognitionModule.start({
-        lang: "hi-IN",
+        lang: "en-IN",
         interimResults: true,
         continuous: true,
         contextualStrings: phrasesRef.current,
@@ -48,6 +48,7 @@ export function useVoiceTrigger(active: boolean, onTriggered: () => void) {
     for (const r of (event.results ?? [])) {
       const t = (r.transcript ?? "").toLowerCase().trim();
       if (!t) continue;
+      console.log("NIVARA heard:", t, "| phrases:", phrasesRef.current);
       const matched = phrasesRef.current.some(p => t.includes(p.toLowerCase().trim()));
       if (matched) {
         triggeredRef.current = true;
