@@ -110,7 +110,7 @@ export default function HomeScreen() {
   }, [countdownVisible]);
 
   useVoiceTrigger(
-    settings.voiceTriggerActive && Platform.OS !== "web",
+    settings.backgroundProtectionEnabled && Platform.OS !== "web",
     handleVoiceSOS
   );
 
