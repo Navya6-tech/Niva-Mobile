@@ -270,32 +270,29 @@ function withNativeBackgroundService(config) {
     fs.writeFileSync(path.join(javaDir, 'BootReceiver.kt'), BOOT_RECEIVER);
     fs.writeFileSync(path.join(javaDir, 'NivaraServiceModule.kt'), SERVICE_MODULE);
     fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
-    // MainApplication.kt is patched separately via withMainApplication
+    // Patch MainApplication.kt
+    const mainAppPath = path.join(javaDir, 'MainApplication.kt');
+    if (fs.existsSync(mainAppPath)) {
+      let content = fs.readFileSync(mainAppPath, 'utf8');
+      if (!content.includes('NivaraServicePackage')) {
+        // Try different indentation patterns
+        const patterns = [
+          'add(DirectSmsPackage())',
+          '  add(DirectSmsPackage())',
+          '    add(DirectSmsPackage())',
+        ];
+        for (const pattern of patterns) {
+          if (content.includes(pattern)) {
+            content = content.replace(pattern, pattern + '\n              add(NivaraServicePackage())');
+            break;
+          }
+        }
+        fs.writeFileSync(mainAppPath, content);
+      }
+    }
     return config;
   }]);
 
-  config = withMainApplication(config, (config) => {
-    const content = config.modResults.contents;
-    if (!content.includes('NivaraServicePackage')) {
-      config.modResults.contents = content
-        .replace(
-          'add(DirectSmsPackage())',
-          'add(DirectSmsPackage())\n              add(NivaraServicePackage())'
-        );
-    }
-    return config;
-  });
-  config = withMainApplication(config, (config) => {
-    const content = config.modResults.contents;
-    if (!content.includes('NivaraServicePackage')) {
-      config.modResults.contents = content
-        .replace(
-          'add(DirectSmsPackage())',
-          'add(DirectSmsPackage())\n              add(NivaraServicePackage())'
-        );
-    }
-    return config;
-  });
   config = withAndroidManifest(config, (config) => {
     const app = config.modResults.manifest.application[0];
     if (!app.service) app.service = [];
