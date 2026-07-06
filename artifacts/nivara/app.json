@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.nivara.safety",
-      "versionCode": 8,
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFFFF"
