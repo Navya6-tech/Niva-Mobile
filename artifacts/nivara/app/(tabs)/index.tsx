@@ -105,9 +105,11 @@ export default function HomeScreen() {
 
   useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible, handleShakeCount);
 
+  const countdownVisibleRef = useRef(countdownVisible);
+  countdownVisibleRef.current = countdownVisible;
   const handleVoiceSOS = useCallback(() => {
-    if (!countdownVisible) setCountdownVisible(true);
-  }, [countdownVisible]);
+    if (!countdownVisibleRef.current) setCountdownVisible(true);
+  }, []);
 
   useVoiceTrigger(
     settings.backgroundProtectionEnabled && Platform.OS !== "web",
