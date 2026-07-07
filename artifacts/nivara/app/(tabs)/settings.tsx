@@ -352,48 +352,6 @@ export default function SettingsScreen() {
             }
           />
         </View>
-
-        {/* Voice Trigger Background - Accessibility Service */}
-        <SectionHeader title="BACKGROUND VOICE TRIGGER" />
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
-          <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-            <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
-              <Feather name="mic" size={18} color={accessibilityOn ? "#4CAF50" : colors.mutedForeground} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                Accessibility Service
-              </Text>
-              <Text style={[styles.settingSubLabel, { color: accessibilityOn ? "#4CAF50" : colors.destructive, fontFamily: "Poppins_400Regular" }]}>
-                {accessibilityOn ? "Active - Voice works in background" : "Disabled - Voice only works when app is open"}
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            style={[styles.settingRow, { borderBottomWidth: 0 }]}
-            onPress={async () => {
-              await openAccessibilitySettings();
-              setTimeout(async () => {
-                const enabled = await isAccessibilityEnabled();
-                setAccessibilityOn(enabled);
-              }, 2000);
-            }}
-          >
-            <View style={[styles.settingIcon, { backgroundColor: colors.muted, borderRadius: 10 }]}>
-              <Feather name="settings" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingLabel, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
-                {accessibilityOn ? "Manage Accessibility" : "Enable Background Voice"}
-              </Text>
-              <Text style={[styles.settingSubLabel, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                Tap to open Accessibility Settings → find NIVARA → turn on
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-          </Pressable>
-        </View>
-
         {/* Background Protection */}
         <SectionHeader title={t("bgSection")} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
