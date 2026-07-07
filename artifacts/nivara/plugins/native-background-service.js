@@ -272,24 +272,56 @@ function withNativeBackgroundService(config) {
     fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
     // Patch MainApplication.kt
     const mainAppPath = path.join(javaDir, 'MainApplication.kt');
-    if (fs.existsSync(mainAppPath)) {
-      let content = fs.readFileSync(mainAppPath, 'utf8');
-      if (!content.includes('NivaraServicePackage')) {
-        // Try different indentation patterns
-        const patterns = [
-          'add(DirectSmsPackage())',
-          '  add(DirectSmsPackage())',
-          '    add(DirectSmsPackage())',
-        ];
-        for (const pattern of patterns) {
-          if (content.includes(pattern)) {
-            content = content.replace(pattern, pattern + '\n              add(NivaraServicePackage())');
-            break;
-          }
-        }
-        fs.writeFileSync(mainAppPath, content);
-      }
+    // Always write MainApplication.kt with NivaraServicePackage included
+    const mainAppContent = `package com.nivara.safety
+
+import android.app.Application
+import com.facebook.react.PackageList
+import com.facebook.react.ReactApplication
+import com.facebook.react.ReactHost
+import com.facebook.react.ReactNativeHost
+import com.facebook.react.ReactPackage
+import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
+import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
+import com.facebook.react.defaults.DefaultReactNativeHost
+import com.facebook.soloader.SoLoader
+import expo.modules.ApplicationLifecycleDispatcher
+import expo.modules.ReactNativeHostWrapper
+
+class MainApplication : Application(), ReactApplication {
+
+  override val reactNativeHost: ReactNativeHost =
+      ReactNativeHostWrapper(this, object : DefaultReactNativeHost(this) {
+        override fun getPackages(): List<ReactPackage> =
+            PackageList(this).packages.apply {
+              // Packages that cannot be autolinked yet can be added manually here, for example:
+              // add(MyReactNativePackage())
+                  add(DirectSmsPackage())
+              add(NivaraServicePackage())
+            }
+
+        override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
+
+        override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
+
+        override val isNewArchEnabled: Boolean = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
+        override val isHermesEnabled: Boolean = BuildConfig.IS_HERMES_ENABLED
+      })
+
+  override val reactHost: ReactHost
+    get() = getDefaultReactHost(applicationContext, reactNativeHost)
+
+  override fun onCreate() {
+    super.onCreate()
+    SoLoader.init(this, false)
+    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+      load()
     }
+    ApplicationLifecycleDispatcher.onApplicationCreate(this)
+  }
+}
+`;
+    fs.writeFileSync(mainAppPath, mainAppContent);
     return config;
   }]);
 
