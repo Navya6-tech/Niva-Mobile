@@ -4,4 +4,10 @@ apply plugin: 'expo-module-gradle-plugin'
 
 android {
     namespace "com.nivara.directsms"
+    defaultConfig {
+        versionName "1.0"
+        minSdk 24
+        targetSdk 36
+        compileSdk 36
+    }
 }
