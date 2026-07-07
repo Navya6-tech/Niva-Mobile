@@ -9,7 +9,9 @@
       "android": {
         "buildType": "apk"
       },
-      "prebuildCommand": "npx expo prebuild --platform android"
+      "env": {
+        "EXPO_ROOT": "."
+      }
     },
     "production": {
       "android": {
