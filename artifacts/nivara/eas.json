@@ -9,7 +9,7 @@
       "android": {
         "buildType": "apk"
       },
-      "prebuildCommand": "npx expo prebuild --platform android --clean"
+      "prebuildCommand": "npx expo prebuild --platform android"
     },
     "production": {
       "android": {
