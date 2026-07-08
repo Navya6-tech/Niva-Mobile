@@ -1,4 +1,3 @@
-import * as BackgroundFetch from "expo-background-fetch";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import * as TaskManager from "expo-task-manager";
@@ -64,11 +63,6 @@ async function startHeartbeatTask() {
   try {
     const isReg = await TaskManager.isTaskRegisteredAsync(BACKGROUND_PROTECTION_TASK);
     if (!isReg) {
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_PROTECTION_TASK, {
-        minimumInterval: 60,
-        stopOnTerminate: false,
-        startOnBoot: true,
-      });
     }
   } catch {}
 }
@@ -76,7 +70,6 @@ async function startHeartbeatTask() {
 async function stopHeartbeatTask() {
   try {
     const isReg = await TaskManager.isTaskRegisteredAsync(BACKGROUND_PROTECTION_TASK);
-    if (isReg) await BackgroundFetch.unregisterTaskAsync(BACKGROUND_PROTECTION_TASK);
   } catch {}
 }
 
