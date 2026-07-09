@@ -263,8 +263,6 @@ class NivaraServicePackage : ReactPackage {
 
 function withNativeBackgroundService(config) {
   config = withDangerousMod(config, ['android', async (config) => {
-      }
-    }
     const javaDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/java/com/nivara/safety');
     fs.mkdirSync(javaDir, { recursive: true });
     fs.mkdirSync(javaDir, { recursive: true });
