@@ -1,0 +1,190 @@
+package com.nivara.safety
+
+import android.app.*
+import android.content.*
+import android.hardware.*
+import android.media.*
+import android.os.*
+import android.speech.*
+import androidx.core.app.NotificationCompat
+import kotlin.math.abs
+import kotlin.math.sqrt
+
+class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListener {
+    companion object {
+        const val CHANNEL_ID = "nivara-protection-channel"
+        const val NOTIF_ID = 1001
+        const val ACTION_START = "START_PROTECTION"
+        const val ACTION_STOP = "STOP_PROTECTION"
+        const val ACTION_SOS = "com.nivara.safety.SOS_TRIGGERED"
+        const val EXTRA_SOURCE = "source"
+        const val ACTION_UPDATE_PHRASES = "UPDATE_PHRASES"
+        const val EXTRA_PHRASES = "phrases"
+        private const val SHAKE_THRESHOLD = 12.0f
+        private const val SHAKE_COUNT_NEEDED = 3
+        private const val SHAKE_WINDOW_MS = 2000L
+        private const val SHAKE_COOLDOWN_MS = 100L
+    }
+
+    // Shake
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var shakeCount = 0; private var shakeWindowStart = 0L; private var lastShakeTime = 0L
+    private var lastX = 0f; private var lastY = 0f; private var lastZ = 0f; private var firstReading = true
+
+    // Speech recognition
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var triggerPhrases = mutableListOf("help me", "stop", "bachao")
+    private var isListening = false
+    private val restartHandler = Handler(Looper.getMainLooper())
+    private val restartRunnable = Runnable { startSpeechRecognition() }
+
+    // Wake lock
+    private var wakeLock: PowerManager.WakeLock? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_UPDATE_PHRASES -> {
+                val phrases = intent.getStringArrayListExtra(EXTRA_PHRASES)
+                if (phrases != null) { triggerPhrases = phrases }
+            }
+            else -> startProtection()
+        }
+        return START_STICKY
+    }
+
+    private fun startProtection() {
+        createNotificationChannel()
+        startForeground(NOTIF_ID, buildNotification())
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nivara:protection")
+        wakeLock?.acquire()
+        accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        startSpeechRecognition()
+    }
+
+    // ── Shake ─────────────────────────────────────────────────────
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type != Sensor.TYPE_ACCELEROMETER) return
+        val x = event.values[0]; val y = event.values[1]; val z = event.values[2]
+        if (firstReading) { lastX = x; lastY = y; lastZ = z; firstReading = false; return }
+        val delta = sqrt(((x-lastX)*(x-lastX) + (y-lastY)*(y-lastY) + (z-lastZ)*(z-lastZ)).toDouble()).toFloat()
+        lastX = x; lastY = y; lastZ = z
+        val now = System.currentTimeMillis()
+        if (delta > SHAKE_THRESHOLD && now - lastShakeTime > SHAKE_COOLDOWN_MS) {
+            lastShakeTime = now
+            if (now - shakeWindowStart > SHAKE_WINDOW_MS) { shakeWindowStart = now; shakeCount = 0 }
+            shakeCount++
+            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; triggerSOS("shake") }
+        }
+    }
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    // ── Speech Recognition ────────────────────────────────────────
+    private fun startSpeechRecognition() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
+        restartHandler.removeCallbacks(restartRunnable)
+        
+        // Destroy old instance
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        isListening = false
+
+        Handler(Looper.getMainLooper()).post {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            speechRecognizer?.setRecognitionListener(this)
+            
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "en-US"))
+            }
+            speechRecognizer?.startListening(intent)
+            isListening = true
+        }
+    }
+
+    private fun checkTranscript(text: String) {
+        val t = text.lowercase().trim()
+        val matched = triggerPhrases.any { phrase -> t.contains(phrase.lowercase().trim()) }
+        if (matched) triggerSOS("voice")
+    }
+
+    // RecognitionListener callbacks
+    override fun onResults(results: Bundle?) {
+        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        matches?.forEach { checkTranscript(it) }
+        isListening = false
+        restartHandler.postDelayed(restartRunnable, 300)
+    }
+
+    override fun onPartialResults(partialResults: Bundle?) {
+        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        matches?.forEach { checkTranscript(it) }
+    }
+
+    override fun onError(error: Int) {
+        isListening = false
+        val delay = if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 300L else 1500L
+        restartHandler.postDelayed(restartRunnable, delay)
+    }
+
+    override fun onEndOfSpeech() { isListening = false }
+    override fun onBeginningOfSpeech() {}
+    override fun onRmsChanged(rmsdB: Float) {}
+    override fun onBufferReceived(buffer: ByteArray?) {}
+    override fun onReadyForSpeech(params: Bundle?) {}
+    override fun onEvent(eventType: Int, params: Bundle?) {}
+
+    // ── SOS trigger ───────────────────────────────────────────────
+    private var lastSosTrigger = 0L
+    private fun triggerSOS(source: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastSosTrigger < 5000) return
+        lastSosTrigger = now
+        sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
+        packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra("sos_source", source)
+        }?.let { startActivity(it) }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ch = NotificationChannel(CHANNEL_ID, "Background Protection", NotificationManager.IMPORTANCE_LOW)
+            ch.setShowBadge(false); ch.enableVibration(false); ch.setSound(null, null)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
+        }
+    }
+
+    private fun buildNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle("NIVARA is protecting you")
+        .setContentText("Shake 3x or say your trigger phrase to activate SOS")
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentIntent(PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+        .setOngoing(true).setPriority(NotificationCompat.PRIORITY_LOW).setSilent(true).build()
+
+    override fun onDestroy() {
+        sensorManager.unregisterListener(this)
+        restartHandler.removeCallbacks(restartRunnable)
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        wakeLock?.release()
+        super.onDestroy()
+    }
+    override fun onBind(intent: Intent?): IBinder? = null
+}
