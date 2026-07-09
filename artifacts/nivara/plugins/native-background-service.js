@@ -263,6 +263,16 @@ class NivaraServicePackage : ReactPackage {
 
 function withNativeBackgroundService(config) {
   config = withDangerousMod(config, ['android', async (config) => {
+    // Set newArchEnabled=true in gradle.properties
+    const gradlePropsPath = path.join(config.modRequest.platformProjectRoot, 'gradle.properties');
+    if (fs.existsSync(gradlePropsPath)) {
+      let props = fs.readFileSync(gradlePropsPath, 'utf8');
+      if (!props.includes('newArchEnabled=true')) {
+        props = props.replace(/newArchEnabled=false/g, 'newArchEnabled=true');
+        if (!props.includes('newArchEnabled')) props += '\nnewArchEnabled=true\n';
+        fs.writeFileSync(gradlePropsPath, props);
+      }
+    }
     const javaDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/java/com/nivara/safety');
     fs.mkdirSync(javaDir, { recursive: true });
     fs.mkdirSync(javaDir, { recursive: true });
