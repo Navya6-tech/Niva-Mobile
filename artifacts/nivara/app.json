@@ -97,9 +97,6 @@
       "typedRoutes": true
     },
     "extra": {
-      "eas": {
-        "projectId": "2bbaf4ca-7b5c-499e-b6c1-93d7bef7869e"
-      },
       "router": {
         "origin": "https://replit.com/"
       }
