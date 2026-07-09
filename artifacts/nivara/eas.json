@@ -12,7 +12,7 @@
       "env": {
         "EXPO_ROOT": "."
       },
-      "prebuildCommand": "npx expo prebuild --platform android"
+      "prebuildCommand": "npx expo prebuild --platform android && echo 'newArchEnabled=true' >> android/gradle.properties"
     },
     "production": {
       "android": {
