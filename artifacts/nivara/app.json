@@ -96,6 +96,14 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "navyapriya"
+    "owner": "navyapriya",
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "1fd60205-30a5-4d99-ad9b-c2b5ce7fdd39"
+      }
+    }
   }
 }
