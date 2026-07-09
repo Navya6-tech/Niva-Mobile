@@ -11,8 +11,7 @@
       },
       "env": {
         "EXPO_ROOT": "."
-      },
-      "prebuildCommand": "npx expo prebuild --platform android && grep -q 'newArchEnabled' android/gradle.properties && sed -i 's/newArchEnabled=false/newArchEnabled=true/' android/gradle.properties || echo 'newArchEnabled=true' >> android/gradle.properties"
+      }
     },
     "production": {
       "android": {

@@ -83,7 +83,15 @@
         }
       ],
       "./plugins/native-background-service",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
