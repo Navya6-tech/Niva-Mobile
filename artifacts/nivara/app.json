@@ -48,7 +48,10 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "buildProperties": {
+        "newArchEnabled": true
+      }
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -80,7 +83,15 @@
         }
       ],
       "./plugins/native-background-service",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

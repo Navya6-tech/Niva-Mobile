@@ -64,6 +64,7 @@
     "direct-sms": "file:modules/direct-sms",
     "expo": "~54.0.35",
     "expo-av": "^16.0.8",
+    "expo-build-properties": "^57.0.3",
     "expo-file-system": "~19.0.23",
     "expo-intent-launcher": "~13.0.8",
     "expo-modules-core": "~3.0.30",
