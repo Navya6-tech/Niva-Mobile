@@ -96,11 +96,6 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "router": {
-        "origin": "https://replit.com/"
-      }
-    },
-    "owner": "navyaaaaaaaaaa"
+    "owner": "navyapriya"
   }
 }
