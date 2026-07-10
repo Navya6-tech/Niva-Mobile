@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { Audio } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Animated, Linking, NativeModules, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
@@ -57,8 +57,10 @@ export default function SOSActiveScreen() {
 
     getLocationAndSendSOS();
 
-    // Wait 1.5s to ensure voice trigger fully releases the mic
-    const recordTimer = setTimeout(() => startRecording(), 1500);
+    // Stop background service to release mic
+    try { if (NativeModules.NivaraService) NativeModules.NivaraService.stopService(); } catch (e) {}
+    // Wait 2s to ensure mic is fully released
+    const recordTimer = setTimeout(() => startRecording(), 2000);
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
     return () => {

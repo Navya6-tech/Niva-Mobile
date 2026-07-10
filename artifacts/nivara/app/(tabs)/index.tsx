@@ -127,12 +127,14 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const onSOSTriggered = useCallback((source: string) => {
+    triggerSOS();
+  }, [triggerSOS]);
+
   // Native background service for shake+voice when app is in background
   useNativeBackgroundService(
     permissionsReady && settings.backgroundProtectionEnabled && Platform.OS === "android",
-    (source) => {
-      triggerSOS();
-    },
+    onSOSTriggered,
     settings.triggerPhrases
   );
 
