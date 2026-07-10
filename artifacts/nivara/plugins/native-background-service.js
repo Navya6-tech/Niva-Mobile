@@ -278,6 +278,14 @@ function withNativeBackgroundService(config) {
       if (!props.includes('expo.useLegacyPackaging=true')) props += '\nexpo.useLegacyPackaging=true\n';
       fs.writeFileSync(gradlePropsPath, props);
     }
+    // Patch MainActivity.kt to remove fabricEnabled JNI trigger
+    const mainActivityPath = path.join(javaDir, 'MainActivity.kt');
+    if (fs.existsSync(mainActivityPath)) {
+      let mainActivity = fs.readFileSync(mainActivityPath, 'utf8');
+      mainActivity = mainActivity.replace(/import com\.facebook\.react\.defaults\.DefaultNewArchitectureEntryPoint\.fabricEnabled\n?/, '');
+      mainActivity = mainActivity.replace(/\s*fabricEnabled\n/, '\n              BuildConfig.IS_NEW_ARCHITECTURE_ENABLED\n');
+      fs.writeFileSync(mainActivityPath, mainActivity);
+    }
     // Patch MainApplication.kt
     const mainAppPath = path.join(javaDir, 'MainApplication.kt');
     // Always write MainApplication.kt with NivaraServicePackage included
