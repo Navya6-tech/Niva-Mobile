@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { router } from "expo-router";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -68,6 +69,14 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    // Handle notification tap - navigate to SOS screen
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      router.push("/sos-active");
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 

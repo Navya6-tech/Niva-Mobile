@@ -16,6 +16,7 @@ import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNativeBackgroundService } from "@/hooks/useNativeBackgroundService";
+import { requestAllPermissions } from "@/hooks/usePermissions";
 import { CountdownModal } from "@/components/CountdownModal";
 import { useShakeDetector } from "@/hooks/useShakeDetector";
 import { useVoiceTrigger } from "@/hooks/useVoiceTrigger";
@@ -116,11 +117,21 @@ export default function HomeScreen() {
     handleVoiceSOS
   );
 
+  const [permissionsReady, setPermissionsReady] = useState(false);
+  // Request permissions on mount BEFORE starting service
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      requestAllPermissions().then(() => setPermissionsReady(true));
+    } else {
+      setPermissionsReady(true);
+    }
+  }, []);
+
   // Native background service for shake+voice when app is in background
   useNativeBackgroundService(
-    settings.backgroundProtectionEnabled && Platform.OS === "android",
+    permissionsReady && settings.backgroundProtectionEnabled && Platform.OS === "android",
     (source) => {
-      if (!countdownVisible) setCountdownVisible(true);
+      triggerSOS();
     },
     settings.triggerPhrases
   );
