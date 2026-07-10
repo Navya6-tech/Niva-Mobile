@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   Linking,
   Platform,
   Pressable,
