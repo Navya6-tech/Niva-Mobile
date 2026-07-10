@@ -27,6 +27,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         const val EXTRA_PHRASES = "phrases"
         private const val SHAKE_THRESHOLD = 12.0f
         private const val SHAKE_COUNT_NEEDED = 3
+        var isAppInForeground = false
         private const val SHAKE_WINDOW_MS = 2000L
         private const val SHAKE_COOLDOWN_MS = 100L
     }
@@ -87,7 +88,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             lastShakeTime = now
             if (now - shakeWindowStart > SHAKE_WINDOW_MS) { shakeWindowStart = now; shakeCount = 0 }
             shakeCount++
-            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; triggerSOS("shake") }
+            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; if (!isAppInForeground) triggerSOS("shake") }
         }
     }
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -241,6 +242,9 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) reactApplicationContext.registerReceiver(sosReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
             else reactApplicationContext.registerReceiver(sosReceiver, filter)
         }
+    }
+    @ReactMethod fun setAppForeground(isForeground: Boolean) {
+        NivaraBackgroundService.isAppInForeground = isForeground
     }
     @ReactMethod fun removeListeners(count: Int) { try { sosReceiver?.let { reactApplicationContext.unregisterReceiver(it) } } catch (e: Exception) {}; sosReceiver = null }
     @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {

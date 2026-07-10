@@ -118,6 +118,23 @@ export default function HomeScreen() {
   );
 
   const [permissionsReady, setPermissionsReady] = useState(false);
+  const [isBackground, setIsBackground] = useState(false);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      const inBg = state === 'background' || state === 'inactive';
+      setIsBackground(inBg);
+      try {
+        const { NivaraService } = require('react-native').NativeModules;
+        if (NivaraService) NivaraService.setAppForeground(!inBg);
+      } catch (e) {}
+    });
+    // Set initial foreground state
+    try {
+      const { NivaraService } = require('react-native').NativeModules;
+      if (NivaraService) NivaraService.setAppForeground(true);
+    } catch (e) {}
+    return () => sub.remove();
+  }, []);
   // Request permissions on mount BEFORE starting service
   useEffect(() => {
     if (Platform.OS === "android") {
