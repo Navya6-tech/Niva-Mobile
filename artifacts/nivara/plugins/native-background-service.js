@@ -270,6 +270,18 @@ function withNativeBackgroundService(config) {
     fs.writeFileSync(path.join(javaDir, 'BootReceiver.kt'), BOOT_RECEIVER);
     fs.writeFileSync(path.join(javaDir, 'NivaraServiceModule.kt'), SERVICE_MODULE);
     fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
+    // Fix app/build.gradle to explicitly include libreact_featureflagsjni.so
+    const appBuildGradlePath = path.join(config.modRequest.platformProjectRoot, 'app/build.gradle');
+    if (fs.existsSync(appBuildGradlePath)) {
+      let buildGradle = fs.readFileSync(appBuildGradlePath, 'utf8');
+      if (!buildGradle.includes('libreact_featureflagsjni')) {
+        buildGradle = buildGradle.replace(
+          'android {',
+          'android {\n    packagingOptions {\n        pickFirst "**/libreact_featureflagsjni.so"\n        pickFirst "**/libreact_nativemodule_defaults.so"\n    }'
+        );
+        fs.writeFileSync(appBuildGradlePath, buildGradle);
+      }
+    }
     // Fix gradle.properties - enable useLegacyPackaging so native libs are extracted
     const gradlePropsPath = path.join(config.modRequest.platformProjectRoot, 'gradle.properties');
     if (fs.existsSync(gradlePropsPath)) {
@@ -299,7 +311,7 @@ import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
-import com.facebook.soloader.SoLoader
+import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 import com.nivara.safety.NivaraServicePackage
@@ -330,7 +342,7 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
-    SoLoader.init(this, false)
+    loadReactNative(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
   }
 }
