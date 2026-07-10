@@ -17,7 +17,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { router } from "expo-router";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { AppState, NativeModules, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -67,8 +67,28 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      // Check if app was opened due to background SOS trigger
+      if (Platform.OS === "android") {
+        try {
+          NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
+            if (pending) router.push("/sos-active");
+          }).catch(() => {});
+        } catch (e) {}
+      }
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    // Track app foreground/background state globally
+    if (Platform.OS === "android") {
+      const sub = AppState.addEventListener('change', state => {
+        const inBg = state === 'background' || state === 'inactive';
+        try { NativeModules.NivaraService?.setAppForeground?.(!inBg); } catch(e) {}
+      });
+      try { NativeModules.NivaraService?.setAppForeground?.(true); } catch(e) {}
+      return () => sub.remove();
+    }
+  }, []);
 
   useEffect(() => {
     // Handle notification tap - navigate to SOS screen

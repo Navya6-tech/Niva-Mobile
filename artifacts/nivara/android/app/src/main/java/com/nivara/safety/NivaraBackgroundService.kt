@@ -158,6 +158,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
+        NivaraServiceModule.pendingSOS = true
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)

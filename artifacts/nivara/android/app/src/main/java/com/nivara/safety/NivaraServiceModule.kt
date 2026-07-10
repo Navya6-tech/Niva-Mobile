@@ -5,6 +5,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     override fun getName() = "NivaraService"
     private var sosReceiver: BroadcastReceiver? = null
+    companion object { var pendingSOS = false }
     @ReactMethod fun startService(promise: Promise) {
         try {
             val i = Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply { action = NivaraBackgroundService.ACTION_START }
@@ -33,6 +34,7 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         }
     }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { NivaraBackgroundService.isAppInForeground = isForeground }
+    @ReactMethod fun getAndClearPendingSOS(promise: Promise) { promise.resolve(pendingSOS); pendingSOS = false }
     @ReactMethod fun removeListeners(count: Int) { try { sosReceiver?.let { reactApplicationContext.unregisterReceiver(it) } } catch (e: Exception) {}; sosReceiver = null }
     @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {
         try {
