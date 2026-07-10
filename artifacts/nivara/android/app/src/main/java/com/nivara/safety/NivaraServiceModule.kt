@@ -32,6 +32,7 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             else reactApplicationContext.registerReceiver(sosReceiver, filter)
         }
     }
+    @ReactMethod fun setAppForeground(isForeground: Boolean) { NivaraBackgroundService.isAppInForeground = isForeground }
     @ReactMethod fun removeListeners(count: Int) { try { sosReceiver?.let { reactApplicationContext.unregisterReceiver(it) } } catch (e: Exception) {}; sosReceiver = null }
     @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {
         try {

@@ -134,17 +134,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useBackgroundProtection(settings.backgroundProtectionEnabled);
 
+  const sosActiveRef = useRef(false);
   const triggerSOS = useCallback(() => {
-    setSosActive(prev => {
-      if (prev) return prev; // Already active, don't trigger again
-      setSosStartTime(Date.now());
-      setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
-      router.push("/sos-active");
-      return true;
-    });
+    if (sosActiveRef.current) return;
+    sosActiveRef.current = true;
+    setSosActive(true);
+    setSosStartTime(Date.now());
+    setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
+    router.push("/sos-active");
+  }, []);
+  const cancelSOS_resetRef = useCallback(() => {
+    sosActiveRef.current = false;
   }, []);
 
   const cancelSOS = useCallback(() => {
+    sosActiveRef.current = false;
     setSosActive(false);
     setSosStartTime(null);
   }, []);
