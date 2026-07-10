@@ -20,6 +20,10 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+    // Check if launched from SOS trigger
+    if (intent?.getBooleanExtra("sos_triggered", false) == true) {
+      NivaraServiceModule.pendingSOS = true
+    }
   }
 
   /**

@@ -154,6 +154,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const markSafe = useCallback(() => {
+    sosActiveRef.current = false;
     setSosActive(false);
     setSosStartTime(null);
     if (checkInRef.current) clearTimeout(checkInRef.current);

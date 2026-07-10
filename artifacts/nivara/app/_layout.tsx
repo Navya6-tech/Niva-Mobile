@@ -72,6 +72,19 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
+    // Check pendingSOS on initial mount - app may have been launched by BG shake
+    if (Platform.OS === "android") {
+      setTimeout(() => {
+        try {
+          NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
+            if (pending) router.push("/sos-active");
+          }).catch(() => {});
+        } catch (e) {}
+      }, 1000);
+    }
+  }, []);
+
+  useEffect(() => {
     // Track app foreground/background state globally
     if (Platform.OS === "android") {
       const sub = AppState.addEventListener('change', state => {
