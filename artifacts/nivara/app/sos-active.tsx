@@ -230,6 +230,8 @@ export default function SOSActiveScreen() {
     await soundRef.current?.unloadAsync().catch(() => {});
     soundRef.current = null;
     markSafe();
+    // Restart background service after SOS ends
+    try { if (NativeModules.NivaraService) NativeModules.NivaraService.startService(); } catch (e) {}
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

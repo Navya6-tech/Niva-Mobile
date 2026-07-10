@@ -67,14 +67,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
-      // Check if app was opened due to background SOS trigger
-      if (Platform.OS === "android") {
-        try {
-          NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
-            if (pending) router.push("/sos-active");
-          }).catch(() => {});
-        } catch (e) {}
-      }
+
     }
   }, [fontsLoaded, fontError]);
 
@@ -84,6 +77,16 @@ export default function RootLayout() {
       const sub = AppState.addEventListener('change', state => {
         const inBg = state === 'background' || state === 'inactive';
         try { NativeModules.NivaraService?.setAppForeground?.(!inBg); } catch(e) {}
+        // Check pending SOS when app becomes active from background
+        if (state === 'active') {
+          setTimeout(() => {
+            try {
+              NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
+                if (pending) router.push("/sos-active");
+              }).catch(() => {});
+            } catch (e) {}
+          }, 300);
+        }
       });
       try { NativeModules.NivaraService?.setAppForeground?.(true); } catch(e) {}
       return () => sub.remove();
