@@ -270,6 +270,14 @@ function withNativeBackgroundService(config) {
     fs.writeFileSync(path.join(javaDir, 'BootReceiver.kt'), BOOT_RECEIVER);
     fs.writeFileSync(path.join(javaDir, 'NivaraServiceModule.kt'), SERVICE_MODULE);
     fs.writeFileSync(path.join(javaDir, 'NivaraServicePackage.kt'), SERVICE_PACKAGE);
+    // Fix gradle.properties - enable useLegacyPackaging so native libs are extracted
+    const gradlePropsPath = path.join(config.modRequest.platformProjectRoot, 'gradle.properties');
+    if (fs.existsSync(gradlePropsPath)) {
+      let props = fs.readFileSync(gradlePropsPath, 'utf8');
+      props = props.replace('expo.useLegacyPackaging=false', 'expo.useLegacyPackaging=true');
+      if (!props.includes('expo.useLegacyPackaging=true')) props += '\nexpo.useLegacyPackaging=true\n';
+      fs.writeFileSync(gradlePropsPath, props);
+    }
     // Patch MainApplication.kt
     const mainAppPath = path.join(javaDir, 'MainApplication.kt');
     // Always write MainApplication.kt with NivaraServicePackage included
@@ -286,6 +294,8 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.soloader.SoLoader
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
+import com.nivara.safety.NivaraServicePackage
+import com.nivara.safety.DirectSmsPackage
 
 class MainApplication : Application(), ReactApplication {
 
