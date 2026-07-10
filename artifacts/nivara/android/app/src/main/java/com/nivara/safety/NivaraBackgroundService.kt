@@ -157,10 +157,26 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
-        packageManager.getLaunchIntentForPackage(packageName)?.apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        // Launch app via full-screen intent notification (works on Android 14+)
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_source", source)
-        }?.let { startActivity(it) }
+            putExtra("sos_triggered", true)
+        }
+        val pendingIntent = PendingIntent.getActivity(this, 1, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val sosNotification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("🚨 SOS ACTIVATED")
+            .setContentText("Emergency triggered by $source. Tap to open app.")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setFullScreenIntent(pendingIntent, true)
+            .setContentIntent(pendingIntent)
+            .build()
+        getSystemService(android.app.NotificationManager::class.java).notify(999, sosNotification)
+        // Also try direct launch for foreground apps
+        try { startActivity(launchIntent) } catch (e: Exception) {}
     }
 
     private fun createNotificationChannel() {
