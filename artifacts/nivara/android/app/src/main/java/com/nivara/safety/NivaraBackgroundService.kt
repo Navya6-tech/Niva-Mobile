@@ -163,6 +163,25 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)
         }
+        // Android 14+ requires full-screen intent notification to launch from background
+        val sosChannelId = "nivara_sos_alert"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val sosChannel = android.app.NotificationChannel(sosChannelId, "SOS Alert", android.app.NotificationManager.IMPORTANCE_HIGH)
+            sosChannel.description = "Emergency SOS alerts"
+            getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(sosChannel)
+        }
+        val pendingIntent = PendingIntent.getActivity(this, 2, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val sosAlert = NotificationCompat.Builder(this, sosChannelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("🚨 SOS Activated")
+            .setContentText("Emergency triggered")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setFullScreenIntent(pendingIntent, true)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(false)
+            .build()
+        getSystemService(android.app.NotificationManager::class.java).notify(998, sosAlert)
         try { startActivity(launchIntent) } catch (e: Exception) {}
     }
 
