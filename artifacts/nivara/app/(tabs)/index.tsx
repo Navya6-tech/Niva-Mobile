@@ -128,7 +128,10 @@ export default function HomeScreen() {
   }, []);
 
   const onSOSTriggered = useCallback((source: string) => {
-    triggerSOS();
+    // Only trigger from native service if countdown is not already visible
+    if (!countdownVisibleRef.current) {
+      triggerSOS();
+    }
   }, [triggerSOS]);
 
   // Native background service for shake+voice when app is in background
