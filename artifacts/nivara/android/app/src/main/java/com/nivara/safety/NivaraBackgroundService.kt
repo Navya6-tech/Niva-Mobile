@@ -164,7 +164,9 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
+        android.util.Log.d("NIVARA", "startBackgroundRecording called, isSosRecording=$isSosRecording")
         Thread {
+            android.util.Log.d("NIVARA", "Recording thread started")
             // Stop speech recognizer on main thread first
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 restartHandler.removeCallbacks(restartRunnable)
@@ -233,6 +235,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
+        android.util.Log.d("NIVARA", "triggerSOS called, source=$source")
         isSosRecording = true
         NivaraServiceModule.pendingSOS = true
         startBackgroundRecording()
