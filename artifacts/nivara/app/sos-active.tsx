@@ -271,7 +271,7 @@ export default function SOSActiveScreen() {
               <Text style={[styles.cardValue, { color: "#fff", fontFamily: "Poppins_500Medium" }]}>
                 {recordingState === "requesting" ? "Starting recorder..." :
                  recordingState === "recording" ? "Recording " + formatDuration(recordingMs) :
-                 recordingState === "stopped" ? "Saved - tap play to listen" :
+                 recordingState === "stopped" ? "Evidence saved ✓" :
                  recordingState === "error" ? "Mic unavailable - retrying..." : "Initializing..."}
               </Text>
             </View>

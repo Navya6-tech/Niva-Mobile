@@ -164,8 +164,6 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         try {
-            // Set SOS recording flag to prevent speech recognizer restart
-            isSosRecording = true
             // Cancel restart handler first to prevent speech recognizer reclaiming mic
             restartHandler.removeCallbacks(restartRunnable)
             // Stop speech recognizer to release mic
@@ -221,6 +219,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
+        isSosRecording = true
         NivaraServiceModule.pendingSOS = true
         startBackgroundRecording()
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
