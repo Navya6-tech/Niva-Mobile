@@ -57,23 +57,9 @@ export default function SOSActiveScreen() {
 
     getLocationAndSendSOS();
 
-    // Check if background service already started recording
-    const recordTimer = setTimeout(async () => {
-      try {
-        const isRecording = await NativeModules.NivaraService?.isBackgroundRecording?.();
-        if (isRecording) {
-          // Background service is recording - show recording state
-          setRecordingState("recording");
-        } else {
-          // Stop service to release mic, then start JS recording
-          try { NativeModules.NivaraService?.stopService?.(); } catch (e) {}
-          await new Promise(r => setTimeout(r, 1500));
-          startRecording();
-        }
-      } catch (e) {
-        startRecording();
-      }
-    }, 500);
+    // Stop service to release mic, then start JS recording
+    try { NativeModules.NivaraService?.stopService?.(); } catch (e) {}
+    const recordTimer = setTimeout(() => startRecording(), 2500);
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
     return () => {

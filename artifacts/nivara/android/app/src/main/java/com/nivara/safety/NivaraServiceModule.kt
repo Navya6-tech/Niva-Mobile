@@ -38,11 +38,9 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
 
     @ReactMethod fun stopBackgroundRecording(promise: Promise) {
         try {
-            val service = android.content.Intent(reactApplicationContext, NivaraBackgroundService::class.java)
-            val filePath = NivaraBackgroundService().stopBackgroundRecording()
+            val filePath = NivaraBackgroundService.stopRecordingStatic() ?: NivaraBackgroundService.recordingFilePath
             promise.resolve(filePath)
         } catch (e: Exception) {
-            // Try direct static access
             promise.resolve(NivaraBackgroundService.recordingFilePath)
         }
     }

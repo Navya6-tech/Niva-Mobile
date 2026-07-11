@@ -25,6 +25,10 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var isAppInForeground = false
         var recordingFilePath: String? = null
         var isRecording = false
+        var instance: NivaraBackgroundService? = null
+        fun stopRecordingStatic(): String? {
+            return instance?.stopBackgroundRecording()
+        }
         private const val SHAKE_WINDOW_MS = 2000L
         private const val SHAKE_COOLDOWN_MS = 100L
     }
@@ -65,6 +69,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     }
 
     private fun startProtection() {
+        instance = this
         createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification())
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -251,6 +256,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         speechRecognizer?.destroy()
         speechRecognizer = null
         wakeLock?.release()
+        instance = null
         super.onDestroy()
     }
     override fun onBind(intent: Intent?): IBinder? = null
