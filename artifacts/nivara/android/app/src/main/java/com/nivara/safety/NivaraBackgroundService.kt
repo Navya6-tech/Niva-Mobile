@@ -23,6 +23,8 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         private const val SHAKE_THRESHOLD = 12.0f
         private const val SHAKE_COUNT_NEEDED = 3
         var isAppInForeground = false
+        var recordingFilePath: String? = null
+        var isRecording = false
         private const val SHAKE_WINDOW_MS = 2000L
         private const val SHAKE_COOLDOWN_MS = 100L
     }
@@ -31,6 +33,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var shakeCount = 0; private var shakeWindowStart = 0L; private var lastShakeTime = 0L
+    private var mediaRecorder: MediaRecorder? = null
     private var lastX = 0f; private var lastY = 0f; private var lastZ = 0f; private var firstReading = true
 
     // Speech recognition
@@ -153,12 +156,54 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
 
     // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
+    private fun startBackgroundRecording() {
+        try {
+            val dir = getExternalFilesDir(null) ?: filesDir
+            val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(this)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+            mediaRecorder?.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(44100)
+                setAudioEncodingBitRate(128000)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            recordingFilePath = file.absolutePath
+            isRecording = true
+        } catch (e: Exception) {
+            mediaRecorder = null
+            isRecording = false
+        }
+    }
+    fun stopBackgroundRecording(): String? {
+        return try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+            mediaRecorder = null
+            isRecording = false
+            recordingFilePath
+        } catch (e: Exception) {
+            mediaRecorder?.release()
+            mediaRecorder = null
+            isRecording = false
+            null
+        }
+    }
     private fun triggerSOS(source: String) {
         val now = System.currentTimeMillis()
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
         NivaraServiceModule.pendingSOS = true
+        startBackgroundRecording()
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)

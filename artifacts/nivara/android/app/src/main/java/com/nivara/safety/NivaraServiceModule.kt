@@ -35,6 +35,19 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { NivaraBackgroundService.isAppInForeground = isForeground }
     @ReactMethod fun getAndClearPendingSOS(promise: Promise) { promise.resolve(pendingSOS); pendingSOS = false }
+
+    @ReactMethod fun stopBackgroundRecording(promise: Promise) {
+        try {
+            val service = android.content.Intent(reactApplicationContext, NivaraBackgroundService::class.java)
+            val filePath = NivaraBackgroundService().stopBackgroundRecording()
+            promise.resolve(filePath)
+        } catch (e: Exception) {
+            // Try direct static access
+            promise.resolve(NivaraBackgroundService.recordingFilePath)
+        }
+    }
+    @ReactMethod fun isBackgroundRecording(promise: Promise) { promise.resolve(NivaraBackgroundService.isRecording) }
+    @ReactMethod fun getRecordingPath(promise: Promise) { promise.resolve(NivaraBackgroundService.recordingFilePath) }
     @ReactMethod fun removeListeners(count: Int) { try { sosReceiver?.let { reactApplicationContext.unregisterReceiver(it) } } catch (e: Exception) {}; sosReceiver = null }
     @ReactMethod fun updatePhrases(phrases: com.facebook.react.bridge.ReadableArray, promise: Promise) {
         try {

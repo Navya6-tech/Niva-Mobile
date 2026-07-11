@@ -57,10 +57,23 @@ export default function SOSActiveScreen() {
 
     getLocationAndSendSOS();
 
-    // Stop background service to release mic
-    try { if (NativeModules.NivaraService) NativeModules.NivaraService.stopService(); } catch (e) {}
-    // Wait 2s to ensure mic is fully released
-    const recordTimer = setTimeout(() => startRecording(), 2000);
+    // Check if background service already started recording
+    const recordTimer = setTimeout(async () => {
+      try {
+        const isRecording = await NativeModules.NivaraService?.isBackgroundRecording?.();
+        if (isRecording) {
+          // Background service is recording - show recording state
+          setRecordingState("recording");
+        } else {
+          // Stop service to release mic, then start JS recording
+          try { NativeModules.NivaraService?.stopService?.(); } catch (e) {}
+          await new Promise(r => setTimeout(r, 1500));
+          startRecording();
+        }
+      } catch (e) {
+        startRecording();
+      }
+    }, 500);
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
     return () => {
@@ -229,6 +242,21 @@ export default function SOSActiveScreen() {
     await stopRecordingInternal();
     await soundRef.current?.unloadAsync().catch(() => {});
     soundRef.current = null;
+    // Stop background recording and save
+    try {
+      const filePath = await NativeModules.NivaraService?.stopBackgroundRecording?.();
+      if (filePath && !recordingUriRef.current) {
+        recordingUriRef.current = filePath;
+        setRecordingUri(filePath);
+        setRecordingState("done");
+        await saveRecordingMeta({
+          uri: filePath,
+          duration: recordingMsRef.current || Date.now() - (sosStartTime ?? Date.now()),
+          date: new Date().toISOString(),
+          kept: false,
+        });
+      }
+    } catch (e) {}
     markSafe();
     // Restart background service after SOS ends
     try { if (NativeModules.NivaraService) NativeModules.NivaraService.startService(); } catch (e) {}
