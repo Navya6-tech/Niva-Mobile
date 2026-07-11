@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   Linking,
   Platform,
   Pressable,
@@ -104,7 +105,7 @@ export default function HomeScreen() {
     setShakeCount(count);
   }, []);
 
-  useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible, handleShakeCount);
+  useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible && !isBackground, handleShakeCount);
 
   const countdownVisibleRef = useRef(countdownVisible);
   countdownVisibleRef.current = countdownVisible;
@@ -118,6 +119,13 @@ export default function HomeScreen() {
   );
 
   const [permissionsReady, setPermissionsReady] = useState(false);
+  const [isBackground, setIsBackground] = useState(false);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      setIsBackground(state === 'background' || state === 'inactive');
+    });
+    return () => sub.remove();
+  }, []);
 
   // Request permissions on mount BEFORE starting service
   useEffect(() => {
