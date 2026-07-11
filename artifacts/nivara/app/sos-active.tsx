@@ -278,8 +278,6 @@ export default function SOSActiveScreen() {
             {recordingState === "recording" && <View style={styles.recDot} />}
             {recordingState === "stopped" && <Feather name="check-circle" size={18} color="#4CAF50" />}
           </View>
-            </View>
-          )}
         </View>
 
         <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16 }]}>
