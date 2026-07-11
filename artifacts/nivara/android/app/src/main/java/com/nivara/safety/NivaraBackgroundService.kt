@@ -163,41 +163,43 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
-        try {
-            // Cancel restart handler first to prevent speech recognizer reclaiming mic
-            restartHandler.removeCallbacks(restartRunnable)
-            // Stop speech recognizer to release mic
-            speechRecognizer?.stopListening()
-            speechRecognizer?.destroy()
-            speechRecognizer = null
-            android.os.SystemClock.sleep(800)
-            val dir = getExternalFilesDir(null) ?: filesDir
-            val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
-            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(this)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaRecorder()
+        // Cancel restart handler first
+        restartHandler.removeCallbacks(restartRunnable)
+        // Stop speech recognizer to release mic
+        speechRecognizer?.stopListening()
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        // Delay recording start to give mic time to release
+        restartHandler.postDelayed({
+            try {
+                val dir = getExternalFilesDir(null) ?: filesDir
+                val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
+                mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    MediaRecorder(this)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaRecorder()
+                }
+                mediaRecorder?.apply {
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    setAudioSamplingRate(44100)
+                    setAudioEncodingBitRate(128000)
+                    setOutputFile(file.absolutePath)
+                    prepare()
+                    start()
+                }
+                recordingFilePath = file.absolutePath
+                isRecording = true
+                android.util.Log.d("NIVARA", "Background recording started: ${file.absolutePath}")
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "Background recording FAILED: ${e.message}")
+                mediaRecorder = null
+                isRecording = false
             }
-            // Request audio focus before recording
-            val audioManager = getSystemService(android.media.AudioManager::class.java)
-            audioManager?.requestAudioFocus(null, android.media.AudioManager.STREAM_VOICE_CALL, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-            mediaRecorder?.apply {
-                setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioSamplingRate(44100)
-                setAudioEncodingBitRate(128000)
-                setOutputFile(file.absolutePath)
-                prepare()
-                start()
-            }
-            recordingFilePath = file.absolutePath
-            isRecording = true
-        } catch (e: Exception) {
-            mediaRecorder = null
-            isRecording = false
-        }
+        }, 1500)
+    }
     }
     fun stopBackgroundRecording(): String? {
         isSosRecording = false
