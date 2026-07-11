@@ -105,7 +105,7 @@ export default function HomeScreen() {
     setShakeCount(count);
   }, []);
 
-  useShakeDetector(handleShake, settings.shakeSensitivity, !countdownVisible && !isBackground, handleShakeCount);
+  useShakeDetector(handleShake, settings.shakeSensitivity, false, handleShakeCount);
 
   const countdownVisibleRef = useRef(countdownVisible);
   countdownVisibleRef.current = countdownVisible;

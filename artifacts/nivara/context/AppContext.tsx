@@ -142,7 +142,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(Date.now());
     setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
     router.replace("/sos-active");
-  }, []);
+    // Send SMS immediately when SOS triggers
+    (async () => {
+      try {
+        const Location = require('expo-location');
+        const loc = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+        ]);
+        const { latitude, longitude } = loc.coords;
+        const mapsLink = `https://maps.google.com/maps?q=${latitude},${longitude}`;
+        const message = `🚨 EMERGENCY SOS! I need help. My location: ${mapsLink}`;
+        const phones = contacts.map((c: any) => c.phone).filter(Boolean);
+        if (phones.length > 0) {
+          const { sendSMS } = require('direct-sms');
+          sendSMS(phones, message);
+        }
+      } catch (e) {}
+    })();
+  }, [contacts]);
   const cancelSOS_resetRef = useCallback(() => {
     sosActiveRef.current = false;
   }, []);

@@ -93,7 +93,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             lastShakeTime = now
             if (now - shakeWindowStart > SHAKE_WINDOW_MS) { shakeWindowStart = now; shakeCount = 0 }
             shakeCount++
-            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; if (!isAppInForeground) triggerSOS("shake") }
+            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; triggerSOS("shake") }
         }
     }
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
