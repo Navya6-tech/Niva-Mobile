@@ -223,29 +223,33 @@ export default function SOSActiveScreen() {
 
   const openLocation = () => { if (locationLink) Linking.openURL(locationLink); };
 
-  const handleMarkSafe = async () => {
-    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await stopRecordingInternal();
-    await soundRef.current?.unloadAsync().catch(() => {});
-    soundRef.current = null;
-    // Stop background recording and save
-    try {
-      const filePath = await NativeModules.NivaraService?.stopBackgroundRecording?.();
-      if (filePath && !recordingUriRef.current) {
-        recordingUriRef.current = filePath;
-        setRecordingUri(filePath);
-        setRecordingState("done");
-        await saveRecordingMeta({
-          uri: filePath,
-          duration: recordingMsRef.current || Date.now() - (sosStartTime ?? Date.now()),
-          date: new Date().toISOString(),
-          kept: false,
-        });
-      }
-    } catch (e) {}
+  const handleMarkSafe = () => {
+    // Call markSafe immediately - don't await anything that could block
     markSafe();
-    // Restart background service after SOS ends
-    try { if (NativeModules.NivaraService) NativeModules.NivaraService.startService(); } catch (e) {}
+    // Do cleanup async without blocking UI
+    (async () => {
+      try { if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
+      try { await Promise.race([stopRecordingInternal(), new Promise(r => setTimeout(r, 2000))]); } catch (e) {}
+      try { await soundRef.current?.unloadAsync(); soundRef.current = null; } catch (e) {}
+      try {
+        const filePath = await Promise.race([
+          NativeModules.NivaraService?.stopBackgroundRecording?.() ?? Promise.resolve(null),
+          new Promise(resolve => setTimeout(() => resolve(null), 2000))
+        ]);
+        if (filePath && !recordingUriRef.current) {
+          recordingUriRef.current = filePath;
+          setRecordingUri(filePath);
+          setRecordingState("done");
+          await saveRecordingMeta({
+            uri: filePath,
+            duration: recordingMsRef.current || Date.now() - (sosStartTime ?? Date.now()),
+            date: new Date().toISOString(),
+            kept: false,
+          });
+        }
+      } catch (e) {}
+      try { if (NativeModules.NivaraService) NativeModules.NivaraService.startService(); } catch (e) {}
+    })();
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

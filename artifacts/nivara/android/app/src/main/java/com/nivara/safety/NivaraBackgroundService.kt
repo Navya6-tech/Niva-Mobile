@@ -180,6 +180,20 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                     @Suppress("DEPRECATION")
                     MediaRecorder()
                 }
+                // Request exclusive audio focus to override any existing audio sessions
+                val audioManager = getSystemService(android.media.AudioManager::class.java)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build())
+                        .build()
+                    audioManager?.requestAudioFocus(focusRequest)
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager?.requestAudioFocus(null, android.media.AudioManager.STREAM_VOICE_CALL, android.media.AudioManager.AUDIOFOCUS_GAIN)
+                }
                 mediaRecorder?.apply {
                     setAudioSource(MediaRecorder.AudioSource.MIC)
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
