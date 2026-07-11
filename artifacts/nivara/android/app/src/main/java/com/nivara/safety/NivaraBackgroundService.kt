@@ -164,12 +164,15 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
-        // Cancel restart handler first
-        restartHandler.removeCallbacks(restartRunnable)
-        // Stop speech recognizer to release mic
-        speechRecognizer?.stopListening()
-        speechRecognizer?.destroy()
-        speechRecognizer = null
+        // Must run on main thread
+        recordingHandler.post {
+            // Cancel restart handler first
+            restartHandler.removeCallbacks(restartRunnable)
+            // Stop speech recognizer to release mic (must be on main thread)
+            speechRecognizer?.stopListening()
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+        }
         // Delay recording start to give mic time to release
         recordingHandler.postDelayed({
             try {
