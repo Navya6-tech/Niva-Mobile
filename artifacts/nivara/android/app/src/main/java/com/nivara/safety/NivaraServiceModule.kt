@@ -45,7 +45,10 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             promise.resolve(true)
         } catch (e: Exception) { promise.resolve(false) }
     }
-    @ReactMethod fun setAppForeground(isForeground: Boolean) { NivaraBackgroundService.isAppInForeground = isForeground }
+    @ReactMethod fun setAppForeground(isForeground: Boolean) { 
+        NivaraBackgroundService.isAppInForeground = isForeground
+        android.util.Log.d("NIVARA", "setAppForeground: $isForeground, isAppInForeground=${NivaraBackgroundService.isAppInForeground}")
+    }
     @ReactMethod fun getAndClearPendingSOS(promise: Promise) { promise.resolve(pendingSOS); pendingSOS = false }
 
     @ReactMethod fun stopBackgroundRecording(promise: Promise) {
