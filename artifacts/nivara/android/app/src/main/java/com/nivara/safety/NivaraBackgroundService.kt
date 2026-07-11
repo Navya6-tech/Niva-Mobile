@@ -163,6 +163,11 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         try {
+            // Stop speech recognizer to release mic
+            speechRecognizer?.stopListening()
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+            android.os.SystemClock.sleep(800)
             val dir = getExternalFilesDir(null) ?: filesDir
             val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
