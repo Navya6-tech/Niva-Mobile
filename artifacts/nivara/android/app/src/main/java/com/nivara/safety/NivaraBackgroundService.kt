@@ -200,7 +200,6 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             }
         }, 1500)
     }
-    }
     fun stopBackgroundRecording(): String? {
         isSosRecording = false
         return try {
