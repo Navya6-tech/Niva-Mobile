@@ -164,29 +164,21 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     // ── SOS trigger ───────────────────────────────────────────────
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
-        // Must run on main thread
-        recordingHandler.post {
-            // Cancel restart handler first
-            restartHandler.removeCallbacks(restartRunnable)
-            // Stop speech recognizer to release mic (must be on main thread)
-            speechRecognizer?.stopListening()
-            speechRecognizer?.destroy()
-            speechRecognizer = null
-        }
-        // Delay recording start to give mic time to release
-        recordingHandler.postDelayed({
+        Thread {
+            // Stop speech recognizer on main thread first
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                restartHandler.removeCallbacks(restartRunnable)
+                speechRecognizer?.stopListening()
+                speechRecognizer?.destroy()
+                speechRecognizer = null
+            }
+            // Wait for mic to release
+            Thread.sleep(1500)
             try {
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
-                mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    MediaRecorder(this)
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaRecorder()
-                }
-                // Request exclusive audio focus to override any existing audio sessions
                 val audioManager = getSystemService(android.media.AudioManager::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
                         .setAudioAttributes(android.media.AudioAttributes.Builder()
                             .setUsage(android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION)
@@ -194,9 +186,12 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                             .build())
                         .build()
                     audioManager?.requestAudioFocus(focusRequest)
+                }
+                mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    MediaRecorder(this)
                 } else {
                     @Suppress("DEPRECATION")
-                    audioManager?.requestAudioFocus(null, android.media.AudioManager.STREAM_VOICE_CALL, android.media.AudioManager.AUDIOFOCUS_GAIN)
+                    MediaRecorder()
                 }
                 mediaRecorder?.apply {
                     setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -216,7 +211,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                 mediaRecorder = null
                 isRecording = false
             }
-        }, 1500)
+        }.start()
     }
     fun stopBackgroundRecording(): String? {
         isSosRecording = false
