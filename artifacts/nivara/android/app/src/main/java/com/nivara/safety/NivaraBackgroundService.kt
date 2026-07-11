@@ -25,6 +25,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var isAppInForeground = false
         var recordingFilePath: String? = null
         var isRecording = false
+        var isSosRecording = false
         var instance: NivaraBackgroundService? = null
         fun stopRecordingStatic(): String? {
             return instance?.stopBackgroundRecording()
@@ -138,7 +139,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         matches?.forEach { checkTranscript(it) }
         isListening = false
-        restartHandler.postDelayed(restartRunnable, 300)
+        if (!isSosRecording) restartHandler.postDelayed(restartRunnable, 300)
     }
 
     override fun onPartialResults(partialResults: Bundle?) {
@@ -149,7 +150,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     override fun onError(error: Int) {
         isListening = false
         val delay = if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) 300L else 1500L
-        restartHandler.postDelayed(restartRunnable, delay)
+        if (!isSosRecording) restartHandler.postDelayed(restartRunnable, delay)
     }
 
     override fun onEndOfSpeech() { isListening = false }
@@ -163,6 +164,8 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         try {
+            // Set SOS recording flag to prevent speech recognizer restart
+            isSosRecording = true
             // Cancel restart handler first to prevent speech recognizer reclaiming mic
             restartHandler.removeCallbacks(restartRunnable)
             // Stop speech recognizer to release mic
@@ -199,6 +202,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
     }
     fun stopBackgroundRecording(): String? {
+        isSosRecording = false
         return try {
             mediaRecorder?.stop()
             mediaRecorder?.release()

@@ -278,32 +278,6 @@ export default function SOSActiveScreen() {
             {recordingState === "recording" && <View style={styles.recDot} />}
             {recordingState === "stopped" && <Feather name="check-circle" size={18} color="#4CAF50" />}
           </View>
-
-          {recordingState === "stopped" && uri && (
-            <View style={[styles.playbackRow, { borderTopColor: "rgba(255,255,255,0.1)" }]}>
-              {playState === "idle" && (
-                <Pressable style={styles.playBtn} onPress={handlePlay}>
-                  <Feather name="play" size={16} color="#fff" />
-                  <Text style={[styles.playBtnText, { fontFamily: "Poppins_500Medium" }]}>Play Recording</Text>
-                </Pressable>
-              )}
-              {playState === "playing" && (
-                <Pressable style={styles.playBtn} onPress={handlePause}>
-                  <Feather name="pause" size={16} color="#fff" />
-                  <Text style={[styles.playBtnText, { fontFamily: "Poppins_500Medium" }]}>Pause</Text>
-                </Pressable>
-              )}
-              {playState === "paused" && (
-                <Pressable style={styles.playBtn} onPress={handleResume}>
-                  <Feather name="play" size={16} color="#fff" />
-                  <Text style={[styles.playBtnText, { fontFamily: "Poppins_500Medium" }]}>Resume</Text>
-                </Pressable>
-              )}
-              {playState !== "idle" && (
-                <View style={[styles.progressBarBg, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-                  <View style={[styles.progressBarFill, { backgroundColor: "#fff", width: String(Math.round(playProgress * 100)) + "%" }]} />
-                </View>
-              )}
             </View>
           )}
         </View>
