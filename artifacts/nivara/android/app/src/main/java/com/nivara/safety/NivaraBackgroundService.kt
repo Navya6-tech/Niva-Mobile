@@ -46,6 +46,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var triggerPhrases = mutableListOf("help me", "stop", "bachao")
     private var isListening = false
     private val restartHandler = Handler(Looper.getMainLooper())
+    private val recordingHandler = Handler(Looper.getMainLooper())
     private val restartRunnable = Runnable { startSpeechRecognition() }
 
     // Wake lock
@@ -170,7 +171,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         speechRecognizer?.destroy()
         speechRecognizer = null
         // Delay recording start to give mic time to release
-        restartHandler.postDelayed({
+        recordingHandler.postDelayed({
             try {
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")

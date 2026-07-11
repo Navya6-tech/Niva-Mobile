@@ -33,6 +33,18 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             else reactApplicationContext.registerReceiver(sosReceiver, filter)
         }
     }
+    @ReactMethod fun releaseAudioSession(promise: Promise) {
+        try {
+            val audioManager = reactApplicationContext.getSystemService(android.media.AudioManager::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+                    .build()
+                audioManager?.requestAudioFocus(focusRequest)
+                audioManager?.abandonAudioFocusRequest(focusRequest)
+            }
+            promise.resolve(true)
+        } catch (e: Exception) { promise.resolve(false) }
+    }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { NivaraBackgroundService.isAppInForeground = isForeground }
     @ReactMethod fun getAndClearPendingSOS(promise: Promise) { promise.resolve(pendingSOS); pendingSOS = false }
 

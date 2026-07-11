@@ -87,9 +87,16 @@ export default function RootLayout() {
   useEffect(() => {
     // Track app foreground/background state globally
     if (Platform.OS === "android") {
-      const sub = AppState.addEventListener('change', state => {
+      const sub = AppState.addEventListener('change', async state => {
         const inBg = state === 'background' || state === 'inactive';
         try { NativeModules.NivaraService?.setAppForeground?.(!inBg); } catch(e) {}
+        if (inBg) {
+          // Release expo-av audio session so native MediaRecorder can use mic
+          try {
+            const { Audio } = require('expo-av');
+            await Audio.setAudioModeAsync({ allowsRecordingIOS: false, staysActiveInBackground: false });
+          } catch(e) {}
+        }
 
       });
       try { NativeModules.NivaraService?.setAppForeground?.(true); } catch(e) {}

@@ -159,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(null);
     if (checkInRef.current) clearTimeout(checkInRef.current);
     setCheckInTimer({ active: false, duration: 30, startTime: null });
-    router.back();
+    router.replace("/(tabs)");
     // Delay reload so recording has time to finish saving to AsyncStorage
     setTimeout(() => setSafeTimestamp(Date.now()), 1500);
   }, []);
