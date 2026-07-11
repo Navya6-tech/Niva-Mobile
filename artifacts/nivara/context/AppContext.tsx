@@ -141,7 +141,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosActive(true);
     setSosStartTime(Date.now());
     setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
-    router.push("/sos-active");
+    router.replace("/sos-active");
   }, []);
   const cancelSOS_resetRef = useCallback(() => {
     sosActiveRef.current = false;

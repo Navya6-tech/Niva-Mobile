@@ -163,6 +163,8 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         try {
+            // Cancel restart handler first to prevent speech recognizer reclaiming mic
+            restartHandler.removeCallbacks(restartRunnable)
             // Stop speech recognizer to release mic
             speechRecognizer?.stopListening()
             speechRecognizer?.destroy()
@@ -176,8 +178,11 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                 @Suppress("DEPRECATION")
                 MediaRecorder()
             }
+            // Request audio focus before recording
+            val audioManager = getSystemService(android.media.AudioManager::class.java)
+            audioManager?.requestAudioFocus(null, android.media.AudioManager.STREAM_VOICE_CALL, android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
             mediaRecorder?.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setAudioSamplingRate(44100)

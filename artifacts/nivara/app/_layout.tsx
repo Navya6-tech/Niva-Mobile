@@ -77,7 +77,7 @@ export default function RootLayout() {
       setTimeout(() => {
         try {
           NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
-            if (pending) router.push("/sos-active");
+            if (pending) router.replace("/sos-active");
           }).catch(() => {});
         } catch (e) {}
       }, 1500);
@@ -100,7 +100,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Handle notification tap - navigate to SOS screen
     const sub = Notifications.addNotificationResponseReceivedListener(() => {
-      router.push("/sos-active");
+      router.replace("/sos-active");
     });
     return () => sub.remove();
   }, []);
