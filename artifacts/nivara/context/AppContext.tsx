@@ -110,7 +110,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 if (retries < 5) setTimeout(() => syncContacts(retries + 1), 1000);
               }
             };
-            setTimeout(() => syncContacts(), 500);
+            syncContacts(); // Sync immediately, retry if not ready
           }
         }
       }
@@ -133,7 +133,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (retries < 5) setTimeout(() => syncToNative(retries + 1), 1000);
           }
         };
-        setTimeout(() => syncToNative(), 500);
+        syncToNative(); // Sync immediately, retry if not ready
       }
 
       if (!merged.onboardingComplete) {

@@ -53,6 +53,9 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         val phoneList = mutableListOf<String>()
         for (i in 0 until phones.size()) { phones.getString(i)?.let { phoneList.add(it) } }
         emergencyPhones = phoneList
+        // Persist to SharedPreferences
+        reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putString("phones", phoneList.joinToString(",")).apply()
         if (lat != 0.0 && lng != 0.0) {
             val loc = android.location.Location("manual")
             loc.latitude = lat
@@ -66,7 +69,11 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             promise.resolve(true)
         } catch (e: Exception) { promise.resolve(false) }
     }
-    @ReactMethod fun setAudioRecordingEnabled(enabled: Boolean) { NivaraBackgroundService.audioRecordingEnabled = enabled }
+    @ReactMethod fun setAudioRecordingEnabled(enabled: Boolean) { 
+        NivaraBackgroundService.audioRecordingEnabled = enabled
+        reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("audioRecording", enabled).apply()
+    }
     @ReactMethod fun setVoiceTriggerEnabled(enabled: Boolean) { 
         NivaraBackgroundService.voiceTriggerEnabled = enabled
         android.util.Log.d("NIVARA", "setVoiceTriggerEnabled: $enabled, current=${NivaraBackgroundService.voiceTriggerEnabled}")

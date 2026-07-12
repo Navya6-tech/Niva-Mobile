@@ -74,6 +74,14 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
 
     private fun startProtection() {
         instance = this
+        // Load persisted settings from SharedPreferences
+        val prefs = getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+        audioRecordingEnabled = prefs.getBoolean("audioRecording", false)
+        val phonesStr = prefs.getString("phones", "")
+        if (!phonesStr.isNullOrEmpty()) {
+            NivaraServiceModule.emergencyPhones = phonesStr.split(",").filter { it.isNotEmpty() }
+        }
+        android.util.Log.d("NIVARA", "Service started - audioRecording=$audioRecordingEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification())
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
