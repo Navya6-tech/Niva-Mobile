@@ -275,8 +275,9 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     }
     fun triggerSOSPublic(source: String) { triggerSOS(source) }
     private fun triggerSOS(source: String) {
+        android.util.Log.d("NIVARA", "triggerSOS ENTRY source=$source lastTrigger=$lastSosTrigger")
         val now = System.currentTimeMillis()
-        if (now - lastSosTrigger < 5000) return
+        if (now - lastSosTrigger < 5000) { android.util.Log.d("NIVARA", "triggerSOS BLOCKED by cooldown"); return }
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
         android.util.Log.d("NIVARA", "triggerSOS called, source=$source, audioRecording=$audioRecordingEnabled, voiceTrigger=$voiceTriggerEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
