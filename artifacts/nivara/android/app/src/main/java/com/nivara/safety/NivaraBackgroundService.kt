@@ -176,8 +176,15 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             speechRecognizer = null
             latch.countDown()
         }
+        // Stop speech recognition - no longer needed after SOS triggered
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            restartHandler.removeCallbacks(restartRunnable)
+            speechRecognizer?.stopListening()
+            isListening = false
+        }
         Thread {
             android.util.Log.d("NIVARA", "Recording thread started")
+            Thread.sleep(800) // Wait for mic to release
             latch.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS)
             Thread.sleep(500)
             try {
@@ -221,7 +228,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     }
     fun stopBackgroundRecording(): String? {
         isSosRecording = false
-        return try {
+        val path = try {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
@@ -233,6 +240,13 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             isRecording = false
             null
         }
+        // Restart speech recognition after recording stops
+        if (voiceTriggerEnabled) {
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                startSpeechRecognition()
+            }, 500)
+        }
+        return path
     }
     private fun sendEmergencySMS(phones: List<String>, message: String) {
         try {

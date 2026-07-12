@@ -20,7 +20,7 @@ export function useNativeBackgroundService(
     }
     try { await NivaraService.setAudioRecordingEnabled(audioRecordingEnabled ?? false); } catch (e) {}
     try { await NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
-  }, []);
+  }, [emergencyPhones, audioRecordingEnabled, voiceTriggerEnabled]);
 
   const stop = useCallback(async () => {
     if (Platform.OS !== "android" || !NivaraService) return;
