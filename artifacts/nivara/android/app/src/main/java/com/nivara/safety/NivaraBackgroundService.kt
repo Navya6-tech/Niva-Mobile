@@ -357,6 +357,17 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         .setContentIntent(PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         .setOngoing(true).setPriority(NotificationCompat.PRIORITY_LOW).setSilent(true).build()
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val restartIntent = android.content.Intent(applicationContext, NivaraBackgroundService::class.java).apply {
+            action = ACTION_START
+        }
+        val pendingIntent = android.app.PendingIntent.getService(applicationContext, 1, restartIntent,
+            android.app.PendingIntent.FLAG_ONE_SHOT or android.app.PendingIntent.FLAG_IMMUTABLE)
+        val alarmManager = getSystemService(android.app.AlarmManager::class.java)
+        alarmManager?.set(android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            android.os.SystemClock.elapsedRealtime() + 1000, pendingIntent)
+        super.onTaskRemoved(rootIntent)
+    }
     override fun onDestroy() {
         sensorManager.unregisterListener(this)
         restartHandler.removeCallbacks(restartRunnable)
@@ -364,6 +375,18 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         speechRecognizer = null
         wakeLock?.release()
         instance = null
+        // Restart service when destroyed
+        if (isSosRecording) {
+            android.util.Log.d("NIVARA", "Service destroyed during SOS - restarting")
+        }
+        val restartIntent = android.content.Intent(applicationContext, NivaraBackgroundService::class.java).apply {
+            action = ACTION_START
+        }
+        val pendingIntent = android.app.PendingIntent.getService(applicationContext, 1, restartIntent, 
+            android.app.PendingIntent.FLAG_ONE_SHOT or android.app.PendingIntent.FLAG_IMMUTABLE)
+        val alarmManager = getSystemService(android.app.AlarmManager::class.java)
+        alarmManager?.set(android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            android.os.SystemClock.elapsedRealtime() + 1000, pendingIntent)
         super.onDestroy()
     }
     override fun onBind(intent: Intent?): IBinder? = null
