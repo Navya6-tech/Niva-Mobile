@@ -135,19 +135,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useBackgroundProtection(settings.backgroundProtectionEnabled);
 
   const sosActiveRef = useRef(false);
-  // Sync emergency data to native service
+  // Sync emergency data to native service periodically
   useEffect(() => {
     if (Platform.OS !== "android") return;
     const { NativeModules } = require("react-native");
     const phones = contacts.map((c: EmergencyContact) => c.phone).filter(Boolean);
-    // Get location and update native
-    import("expo-location").then(Location => {
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
+    const syncData = async () => {
+      try {
+        const Location = await import("expo-location");
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         NativeModules.NivaraService?.updateEmergencyData?.(phones, loc.coords.latitude, loc.coords.longitude);
-      }).catch(() => {
+      } catch {
         NativeModules.NivaraService?.updateEmergencyData?.(phones, 0, 0);
-      });
-    });
+      }
+    };
+    syncData();
+    // Refresh location every 2 minutes
+    const interval = setInterval(syncData, 120000);
+    return () => clearInterval(interval);
   }, [contacts]);
 
   const triggerSOS = useCallback(() => {

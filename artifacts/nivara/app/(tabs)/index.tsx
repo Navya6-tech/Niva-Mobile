@@ -136,6 +136,8 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const emergencyPhoneNumbers = contacts.map((c: any) => c.phone).filter(Boolean);
+
   const onSOSTriggered = useCallback((source: string) => {
     // Only trigger from native service if countdown is not already visible
     if (!countdownVisibleRef.current) {
@@ -147,7 +149,10 @@ export default function HomeScreen() {
   useNativeBackgroundService(
     permissionsReady && settings.backgroundProtectionEnabled && Platform.OS === "android",
     onSOSTriggered,
-    settings.triggerPhrases
+    settings.triggerPhrases,
+    emergencyPhoneNumbers,
+    settings.audioRecording,
+    settings.voiceTriggerActive
   );
 
   const handleVoiceToggle = useCallback(() => {

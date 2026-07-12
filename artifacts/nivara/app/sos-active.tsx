@@ -58,7 +58,6 @@ export default function SOSActiveScreen() {
     getLocationAndSendSOS();
 
     // Stop service to release mic, then start JS recording
-    try { NativeModules.NivaraService?.stopService?.(); } catch (e) {}
     const recordTimer = setTimeout(() => startRecording(), 4000);
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
@@ -255,7 +254,7 @@ export default function SOSActiveScreen() {
           });
         }
       } catch (e) {}
-      try { if (NativeModules.NivaraService) NativeModules.NivaraService.startService(); } catch (e) {}
+
     })();
   };
 

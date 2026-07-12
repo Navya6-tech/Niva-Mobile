@@ -26,6 +26,8 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var recordingFilePath: String? = null
         var isRecording = false
         var isSosRecording = false
+        var audioRecordingEnabled = false
+        var voiceTriggerEnabled = false
         var instance: NivaraBackgroundService? = null
         fun stopRecordingStatic(): String? {
             return instance?.stopBackgroundRecording()
@@ -100,6 +102,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
 
     // ── Speech Recognition ────────────────────────────────────────
     private fun startSpeechRecognition() {
+        if (!voiceTriggerEnabled) return
         if (!SpeechRecognizer.isRecognitionAvailable(this)) return
         restartHandler.removeCallbacks(restartRunnable)
         
@@ -165,17 +168,18 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         android.util.Log.d("NIVARA", "startBackgroundRecording called, isSosRecording=$isSosRecording")
+        val latch = java.util.concurrent.CountDownLatch(1)
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            restartHandler.removeCallbacks(restartRunnable)
+            speechRecognizer?.stopListening()
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+            latch.countDown()
+        }
         Thread {
             android.util.Log.d("NIVARA", "Recording thread started")
-            // Stop speech recognizer on main thread first
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                restartHandler.removeCallbacks(restartRunnable)
-                speechRecognizer?.stopListening()
-                speechRecognizer?.destroy()
-                speechRecognizer = null
-            }
-            // Wait for mic to release
-            Thread.sleep(3000)
+            latch.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS)
+            Thread.sleep(500)
             try {
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
@@ -263,7 +267,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         android.util.Log.d("NIVARA", "triggerSOS called, source=$source")
         isSosRecording = true
         NivaraServiceModule.pendingSOS = true
-        startBackgroundRecording()
+        if (audioRecordingEnabled) startBackgroundRecording()
         // Send SMS immediately from native
         Thread {
             try {

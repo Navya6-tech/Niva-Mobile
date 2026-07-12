@@ -7,11 +7,19 @@ console.log("NIVARA NivaraService module:", NivaraService ? "FOUND" : "NOT FOUND
 export function useNativeBackgroundService(
   enabled: boolean,
   onSOSTriggered: (source: string) => void,
-  triggerPhrases?: string[]
+  triggerPhrases?: string[],
+  emergencyPhones?: string[],
+  audioRecordingEnabled?: boolean,
+  voiceTriggerEnabled?: boolean
 ) {
   const start = useCallback(async () => {
     if (Platform.OS !== "android" || !NivaraService) return;
     try { await NivaraService.startService(); } catch (e) {}
+    if (emergencyPhones && emergencyPhones.length > 0) {
+      try { await NivaraService.updateEmergencyData(emergencyPhones, 0, 0); } catch (e) {}
+    }
+    try { await NivaraService.setAudioRecordingEnabled(audioRecordingEnabled ?? false); } catch (e) {}
+    try { await NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
   }, []);
 
   const stop = useCallback(async () => {
@@ -38,6 +46,10 @@ export function useNativeBackgroundService(
     if (Platform.OS !== "android" || !NivaraService || !enabled || !triggerPhrases) return;
     updatePhrases(triggerPhrases);
   }, [triggerPhrases, enabled, updatePhrases]);
+  useEffect(() => {
+    if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones) return;
+    try { NivaraService.updateEmergencyData(emergencyPhones, 0, 0); } catch (e) {}
+  }, [emergencyPhones, enabled]);
 }
 
 export async function openAccessibilitySettings() {
