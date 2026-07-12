@@ -285,7 +285,13 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         // Send SMS immediately from native
         Thread {
             try {
-                val location = NivaraServiceModule.lastKnownLocation
+                var location = NivaraServiceModule.lastKnownLocation
+                try {
+                    val lm = getSystemService(android.location.LocationManager::class.java)
+                    val fresh = lm?.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+                        ?: lm?.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+                    if (fresh != null) location = fresh
+                } catch (e: Exception) {}
                 val message = if (location != null) {
                     "🚨 EMERGENCY SOS! I need help. My location: https://maps.google.com/maps?q=${location.latitude},${location.longitude}"
                 } else {

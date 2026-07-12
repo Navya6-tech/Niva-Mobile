@@ -63,7 +63,7 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     @ReactMethod fun setAudioRecordingEnabled(enabled: Boolean) { NivaraBackgroundService.audioRecordingEnabled = enabled }
     @ReactMethod fun setVoiceTriggerEnabled(enabled: Boolean) { 
         NivaraBackgroundService.voiceTriggerEnabled = enabled
-        android.util.Log.d("NIVARA", "voiceTriggerEnabled: $enabled")
+        android.util.Log.d("NIVARA", "setVoiceTriggerEnabled: $enabled, current=${NivaraBackgroundService.voiceTriggerEnabled}")
     }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { 
         NivaraBackgroundService.isAppInForeground = isForeground

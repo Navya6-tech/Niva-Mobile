@@ -114,7 +114,7 @@ export default function HomeScreen() {
   }, []);
 
   useVoiceTrigger(
-    settings.backgroundProtectionEnabled && Platform.OS !== "web",
+    settings.backgroundProtectionEnabled && settings.voiceTriggerActive && Platform.OS !== "web",
     handleVoiceSOS
   );
 

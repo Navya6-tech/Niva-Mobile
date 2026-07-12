@@ -55,14 +55,11 @@ export default function SOSActiveScreen() {
       Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true }),
     ])).start();
 
-    getLocationAndSendSOS();
 
-    // Stop service to release mic, then start JS recording
-    const recordTimer = setTimeout(() => startRecording(), 4000);
+    // Native handles recording
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
     return () => {
-      clearTimeout(recordTimer);
       clearInterval(interval);
       soundRef.current?.unloadAsync().catch(() => {});
     };
@@ -187,7 +184,6 @@ export default function SOSActiveScreen() {
   const handlePause = async () => { try { await soundRef.current?.pauseAsync(); setPlayState("paused"); } catch (e) {} };
   const handleResume = async () => { try { await soundRef.current?.playAsync(); setPlayState("playing"); } catch (e) {} };
 
-  const getLocationAndSendSOS = async () => {
     try {
       if (Platform.OS === "web") { setLocationText("Location unavailable on web"); buildAndSendSMS("0.0000", "0.0000"); return; }
       const { status } = await Location.requestForegroundPermissionsAsync();
