@@ -91,11 +91,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         AsyncStorage.getItem("settings"),
       ]);
 
-      if (contactsData) setContacts(JSON.parse(contactsData));
+      if (contactsData) {
+        const loadedContacts = JSON.parse(contactsData);
+        setContacts(loadedContacts);
+        // Sync contacts to native service immediately
+        if (Platform.OS === "android") {
+          try {
+            const { NativeModules } = require("react-native");
+            const phones = loadedContacts.map((c: any) => c.phone).filter(Boolean);
+            if (phones.length > 0) {
+              NativeModules.NivaraService?.updateEmergencyData?.(phones, 0, 0);
+            }
+          } catch (e) {}
+        }
+      }
 
       const savedSettings = settingsData ? JSON.parse(settingsData) : {};
       const merged: AppSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
       setSettings(merged);
+      // Sync settings to native service after loading from AsyncStorage
+      if (Platform.OS === "android") {
+        try {
+          const { NativeModules } = require("react-native");
+          NativeModules.NivaraService?.setAudioRecordingEnabled?.(merged.audioRecording ?? false);
+          NativeModules.NivaraService?.setVoiceTriggerEnabled?.(merged.voiceTriggerActive ?? false);
+        } catch (e) {}
+      }
 
       if (!merged.onboardingComplete) {
         router.replace("/onboarding");
