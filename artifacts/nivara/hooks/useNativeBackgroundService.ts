@@ -47,7 +47,7 @@ export function useNativeBackgroundService(
     updatePhrases(triggerPhrases);
   }, [triggerPhrases, enabled, updatePhrases]);
   useEffect(() => {
-    if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones || emergencyPhones.length === 0) return;
+    if (Platform.OS !== "android" || !NivaraService || !emergencyPhones || emergencyPhones.length === 0) return;
     // Get location and sync with contacts
     (async () => {
       try {
@@ -60,13 +60,13 @@ export function useNativeBackgroundService(
     })();
   }, [emergencyPhones, enabled]);
   useEffect(() => {
-    if (Platform.OS !== "android" || !NivaraService || !enabled) return;
+    if (Platform.OS !== "android" || !NivaraService) return;
     try { NivaraService.setAudioRecordingEnabled(audioRecordingEnabled ?? false); } catch (e) {}
-  }, [audioRecordingEnabled, enabled]);
+  }, [audioRecordingEnabled]);
   useEffect(() => {
-    if (Platform.OS !== "android" || !NivaraService || !enabled) return;
+    if (Platform.OS !== "android" || !NivaraService) return;
     try { NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
-  }, [voiceTriggerEnabled, enabled]);
+  }, [voiceTriggerEnabled]);
 }
 
 export async function openAccessibilitySettings() {
