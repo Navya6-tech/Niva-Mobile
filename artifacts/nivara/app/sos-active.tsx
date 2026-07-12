@@ -56,10 +56,17 @@ export default function SOSActiveScreen() {
     ])).start();
 
 
-    // Native handles recording
+    // Check native recording status
+    const checkRecording = setInterval(async () => {
+      try {
+        const isRec = await NativeModules.NivaraService?.isBackgroundRecording?.();
+        if (isRec) setRecordingState("recording");
+      } catch (e) {}
+    }, 2000);
     const interval = setInterval(() => setElapsed(Date.now() - (sosStartTime ?? Date.now())), 1000);
 
     return () => {
+      clearInterval(checkRecording);
       clearInterval(interval);
       soundRef.current?.unloadAsync().catch(() => {});
     };

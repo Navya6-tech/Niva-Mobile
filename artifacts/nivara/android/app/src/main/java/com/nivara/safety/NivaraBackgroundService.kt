@@ -309,8 +309,12 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                 }
                 val phones = NivaraServiceModule.emergencyPhones
                 android.util.Log.d("NIVARA", "SMS phones count: ${phones.size}")
+                android.util.Log.d("NIVARA", "SMS about to send to ${phones.size} phones, message length=${message.length}")
                 if (phones.isNotEmpty()) {
                     sendEmergencySMS(phones, message)
+                    android.util.Log.d("NIVARA", "SMS sendEmergencySMS called")
+                } else {
+                    android.util.Log.e("NIVARA", "SMS phones empty!")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("NIVARA", "SMS thread error: ${e.message}")
