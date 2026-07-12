@@ -184,7 +184,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
         Thread {
             android.util.Log.d("NIVARA", "Recording thread started")
-            Thread.sleep(800) // Wait for mic to release
+            Thread.sleep(1500) // Wait for mic to release
             latch.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS)
             Thread.sleep(500)
             try {

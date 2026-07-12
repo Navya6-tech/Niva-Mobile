@@ -47,8 +47,17 @@ export function useNativeBackgroundService(
     updatePhrases(triggerPhrases);
   }, [triggerPhrases, enabled, updatePhrases]);
   useEffect(() => {
-    if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones) return;
-    try { NivaraService.updateEmergencyData(emergencyPhones, 0, 0); } catch (e) {}
+    if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones || emergencyPhones.length === 0) return;
+    // Get location and sync with contacts
+    (async () => {
+      try {
+        const Location = await import("expo-location");
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        NivaraService.updateEmergencyData(emergencyPhones, loc.coords.latitude, loc.coords.longitude);
+      } catch {
+        try { NivaraService.updateEmergencyData(emergencyPhones, 0, 0); } catch (e) {}
+      }
+    })();
   }, [emergencyPhones, enabled]);
   useEffect(() => {
     if (Platform.OS !== "android" || !NivaraService || !enabled) return;
