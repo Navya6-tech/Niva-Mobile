@@ -94,15 +94,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (contactsData) {
         const loadedContacts = JSON.parse(contactsData);
         setContacts(loadedContacts);
-        // Sync contacts to native service immediately
+        // Sync contacts to native service with retry
         if (Platform.OS === "android") {
-          try {
-            const { NativeModules } = require("react-native");
-            const phones = loadedContacts.map((c: any) => c.phone).filter(Boolean);
-            if (phones.length > 0) {
-              NativeModules.NivaraService?.updateEmergencyData?.(phones, 0, 0);
-            }
-          } catch (e) {}
+          const phones = loadedContacts.map((c: any) => c.phone).filter(Boolean);
+          if (phones.length > 0) {
+            const syncContacts = (retries = 0) => {
+              try {
+                const { NativeModules } = require("react-native");
+                if (NativeModules.NivaraService) {
+                  NativeModules.NivaraService.updateEmergencyData(phones, 0, 0);
+                } else if (retries < 5) {
+                  setTimeout(() => syncContacts(retries + 1), 1000);
+                }
+              } catch (e) {
+                if (retries < 5) setTimeout(() => syncContacts(retries + 1), 1000);
+              }
+            };
+            setTimeout(() => syncContacts(), 500);
+          }
         }
       }
 
@@ -111,11 +120,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setSettings(merged);
       // Sync settings to native service after loading from AsyncStorage
       if (Platform.OS === "android") {
-        try {
-          const { NativeModules } = require("react-native");
-          NativeModules.NivaraService?.setAudioRecordingEnabled?.(merged.audioRecording ?? false);
-          NativeModules.NivaraService?.setVoiceTriggerEnabled?.(merged.voiceTriggerActive ?? false);
-        } catch (e) {}
+        const syncToNative = (retries = 0) => {
+          try {
+            const { NativeModules } = require("react-native");
+            if (NativeModules.NivaraService) {
+              NativeModules.NivaraService.setAudioRecordingEnabled(merged.audioRecording ?? false);
+              NativeModules.NivaraService.setVoiceTriggerEnabled(merged.voiceTriggerActive ?? false);
+            } else if (retries < 5) {
+              setTimeout(() => syncToNative(retries + 1), 1000);
+            }
+          } catch (e) {
+            if (retries < 5) setTimeout(() => syncToNative(retries + 1), 1000);
+          }
+        };
+        setTimeout(() => syncToNative(), 500);
       }
 
       if (!merged.onboardingComplete) {
