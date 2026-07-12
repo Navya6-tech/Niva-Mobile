@@ -65,6 +65,8 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     }
     @ReactMethod fun triggerSOSFromJS(promise: Promise) {
         try {
+            // Reset cooldown so JS trigger always works
+            NivaraBackgroundService.instance?.resetLastSosTrigger()
             NivaraBackgroundService.instance?.triggerSOSPublic("voice_js")
             promise.resolve(true)
         } catch (e: Exception) { promise.resolve(false) }

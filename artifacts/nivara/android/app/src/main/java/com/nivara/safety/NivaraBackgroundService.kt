@@ -282,6 +282,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
     }
     fun triggerSOSPublic(source: String) { triggerSOS(source) }
+    fun resetLastSosTrigger() { lastSosTrigger = 0L }
     private fun triggerSOS(source: String) {
         android.util.Log.d("NIVARA", "triggerSOS ENTRY source=$source lastTrigger=$lastSosTrigger")
         val now = System.currentTimeMillis()
