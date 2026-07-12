@@ -162,6 +162,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(Date.now());
     setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
     router.replace("/sos-active");
+    // Trigger native SMS and recording
+    try {
+      const { NativeModules } = require("react-native");
+      NativeModules.NivaraService?.triggerSOSFromJS?.();
+    } catch (e) {}
     // Send SMS immediately when SOS triggers
     (async () => {
       try {

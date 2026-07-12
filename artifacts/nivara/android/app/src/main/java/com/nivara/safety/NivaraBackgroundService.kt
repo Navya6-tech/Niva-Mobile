@@ -273,6 +273,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             android.util.Log.e("NIVARA", "SMS error: ${e.message}")
         }
     }
+    fun triggerSOSPublic(source: String) { triggerSOS(source) }
     private fun triggerSOS(source: String) {
         val now = System.currentTimeMillis()
         if (now - lastSosTrigger < 5000) return

@@ -60,6 +60,12 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             lastKnownLocation = loc
         }
     }
+    @ReactMethod fun triggerSOSFromJS(promise: Promise) {
+        try {
+            NivaraBackgroundService.instance?.triggerSOSPublic("voice_js")
+            promise.resolve(true)
+        } catch (e: Exception) { promise.resolve(false) }
+    }
     @ReactMethod fun setAudioRecordingEnabled(enabled: Boolean) { NivaraBackgroundService.audioRecordingEnabled = enabled }
     @ReactMethod fun setVoiceTriggerEnabled(enabled: Boolean) { 
         NivaraBackgroundService.voiceTriggerEnabled = enabled
