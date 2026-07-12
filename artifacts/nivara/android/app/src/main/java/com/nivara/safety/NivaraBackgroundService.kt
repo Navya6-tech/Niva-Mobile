@@ -264,7 +264,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         if (now - lastSosTrigger < 5000) return
         lastSosTrigger = now
         sendBroadcast(Intent(ACTION_SOS).apply { putExtra(EXTRA_SOURCE, source); setPackage(packageName) })
-        android.util.Log.d("NIVARA", "triggerSOS called, source=$source")
+        android.util.Log.d("NIVARA", "triggerSOS called, source=$source, audioRecording=$audioRecordingEnabled, voiceTrigger=$voiceTriggerEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         isSosRecording = true
         NivaraServiceModule.pendingSOS = true
         if (audioRecordingEnabled) startBackgroundRecording()

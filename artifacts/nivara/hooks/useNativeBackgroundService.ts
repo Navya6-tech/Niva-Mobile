@@ -50,6 +50,14 @@ export function useNativeBackgroundService(
     if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones) return;
     try { NivaraService.updateEmergencyData(emergencyPhones, 0, 0); } catch (e) {}
   }, [emergencyPhones, enabled]);
+  useEffect(() => {
+    if (Platform.OS !== "android" || !NivaraService || !enabled) return;
+    try { NivaraService.setAudioRecordingEnabled(audioRecordingEnabled ?? false); } catch (e) {}
+  }, [audioRecordingEnabled, enabled]);
+  useEffect(() => {
+    if (Platform.OS !== "android" || !NivaraService || !enabled) return;
+    try { NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
+  }, [voiceTriggerEnabled, enabled]);
 }
 
 export async function openAccessibilitySettings() {
