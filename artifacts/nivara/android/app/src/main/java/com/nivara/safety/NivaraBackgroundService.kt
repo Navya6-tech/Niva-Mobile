@@ -230,6 +230,31 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             null
         }
     }
+    private fun sendEmergencySMS(phones: List<String>, message: String) {
+        try {
+            val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                getSystemService(android.telephony.SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                android.telephony.SmsManager.getDefault()
+            }
+            for (phone in phones) {
+                try {
+                    if (message.length > 160) {
+                        val parts = smsManager.divideMessage(message)
+                        smsManager.sendMultipartTextMessage(phone, null, parts, null, null)
+                    } else {
+                        smsManager.sendTextMessage(phone, null, message, null, null)
+                    }
+                    android.util.Log.d("NIVARA", "SMS sent to $phone")
+                } catch (e: Exception) {
+                    android.util.Log.e("NIVARA", "SMS failed to $phone: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "SMS error: ${e.message}")
+        }
+    }
     private fun triggerSOS(source: String) {
         val now = System.currentTimeMillis()
         if (now - lastSosTrigger < 5000) return
@@ -239,6 +264,23 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         isSosRecording = true
         NivaraServiceModule.pendingSOS = true
         startBackgroundRecording()
+        // Send SMS immediately from native
+        Thread {
+            try {
+                val location = NivaraServiceModule.lastKnownLocation
+                val message = if (location != null) {
+                    "🚨 EMERGENCY SOS! I need help. My location: https://maps.google.com/maps?q=${location.latitude},${location.longitude}"
+                } else {
+                    "🚨 EMERGENCY SOS! I need help. Please call me immediately."
+                }
+                val phones = NivaraServiceModule.emergencyPhones
+                if (phones.isNotEmpty()) {
+                    sendEmergencySMS(phones, message)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "SMS thread error: ${e.message}")
+            }
+        }.start()
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)

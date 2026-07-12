@@ -232,17 +232,24 @@ export default function SOSActiveScreen() {
       try { await Promise.race([stopRecordingInternal(), new Promise(r => setTimeout(r, 2000))]); } catch (e) {}
       try { await soundRef.current?.unloadAsync(); soundRef.current = null; } catch (e) {}
       try {
+        // Stop native recording and save metadata
         const filePath = await Promise.race([
           NativeModules.NivaraService?.stopBackgroundRecording?.() ?? Promise.resolve(null),
           new Promise(resolve => setTimeout(() => resolve(null), 2000))
         ]);
-        if (filePath && !recordingUriRef.current) {
-          recordingUriRef.current = filePath;
-          setRecordingUri(filePath);
-          setRecordingState("done");
+        if (filePath) {
           await saveRecordingMeta({
-            uri: filePath,
-            duration: recordingMsRef.current || Date.now() - (sosStartTime ?? Date.now()),
+            uri: 'file://' + filePath,
+            duration: Date.now() - (sosStartTime ?? Date.now()),
+            date: new Date().toISOString(),
+            kept: false,
+          });
+        }
+        // Also save JS recording if it happened
+        if (recordingUriRef.current && recordingUriRef.current !== ('file://' + filePath)) {
+          await saveRecordingMeta({
+            uri: recordingUriRef.current,
+            duration: recordingMsRef.current || 0,
             date: new Date().toISOString(),
             kept: false,
           });

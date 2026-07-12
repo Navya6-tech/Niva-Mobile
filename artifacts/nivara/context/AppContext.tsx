@@ -135,6 +135,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useBackgroundProtection(settings.backgroundProtectionEnabled);
 
   const sosActiveRef = useRef(false);
+  // Sync emergency data to native service
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const { NativeModules } = require("react-native");
+    const phones = contacts.map((c: EmergencyContact) => c.phone).filter(Boolean);
+    // Get location and update native
+    import("expo-location").then(Location => {
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(loc => {
+        NativeModules.NivaraService?.updateEmergencyData?.(phones, loc.coords.latitude, loc.coords.longitude);
+      }).catch(() => {
+        NativeModules.NivaraService?.updateEmergencyData?.(phones, 0, 0);
+      });
+    });
+  }, [contacts]);
+
   const triggerSOS = useCallback(() => {
     if (sosActiveRef.current) return;
     sosActiveRef.current = true;

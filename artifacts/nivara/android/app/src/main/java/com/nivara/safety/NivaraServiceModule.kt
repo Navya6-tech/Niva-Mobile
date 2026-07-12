@@ -5,7 +5,11 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     override fun getName() = "NivaraService"
     private var sosReceiver: BroadcastReceiver? = null
-    companion object { var pendingSOS = false }
+    companion object { 
+        var pendingSOS = false
+        var emergencyPhones: List<String> = emptyList()
+        var lastKnownLocation: android.location.Location? = null
+    }
     @ReactMethod fun startService(promise: Promise) {
         try {
             val i = Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply { action = NivaraBackgroundService.ACTION_START }
@@ -44,6 +48,17 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             }
             promise.resolve(true)
         } catch (e: Exception) { promise.resolve(false) }
+    }
+    @ReactMethod fun updateEmergencyData(phones: com.facebook.react.bridge.ReadableArray, lat: Double, lng: Double) {
+        val phoneList = mutableListOf<String>()
+        for (i in 0 until phones.size()) { phones.getString(i)?.let { phoneList.add(it) } }
+        emergencyPhones = phoneList
+        if (lat != 0.0 && lng != 0.0) {
+            val loc = android.location.Location("manual")
+            loc.latitude = lat
+            loc.longitude = lng
+            lastKnownLocation = loc
+        }
     }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { 
         NivaraBackgroundService.isAppInForeground = isForeground
