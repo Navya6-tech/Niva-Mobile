@@ -184,20 +184,6 @@ export default function SOSActiveScreen() {
   const handlePause = async () => { try { await soundRef.current?.pauseAsync(); setPlayState("paused"); } catch (e) {} };
   const handleResume = async () => { try { await soundRef.current?.playAsync(); setPlayState("playing"); } catch (e) {} };
 
-    try {
-      if (Platform.OS === "web") { setLocationText("Location unavailable on web"); buildAndSendSMS("0.0000", "0.0000"); return; }
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") { setLocationText("Location permission denied"); buildAndSendSMS("unknown", "unknown"); return; }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { latitude, longitude } = loc.coords;
-      const link = "https://maps.google.com/?q=" + latitude.toFixed(6) + "," + longitude.toFixed(6);
-      setLocationLink(link);
-      setLocationText(latitude.toFixed(5) + ", " + longitude.toFixed(5));
-      lastLatLng.current = { lat: latitude.toFixed(6), lng: longitude.toFixed(6) };
-      buildAndSendSMS(latitude.toFixed(6), longitude.toFixed(6));
-    } catch { setLocationText("Could not get location"); buildAndSendSMS("unknown", "unknown"); }
-  };
-
   const buildAndSendSMS = async (lat, lng) => {
     if (contacts.length === 0) return;
     setSmsState("sending");
