@@ -175,7 +175,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                 speechRecognizer = null
             }
             // Wait for mic to release
-            Thread.sleep(1500)
+            Thread.sleep(3000)
             try {
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
@@ -274,6 +274,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                     "🚨 EMERGENCY SOS! I need help. Please call me immediately."
                 }
                 val phones = NivaraServiceModule.emergencyPhones
+                android.util.Log.d("NIVARA", "SMS phones count: ${phones.size}")
                 if (phones.isNotEmpty()) {
                     sendEmergencySMS(phones, message)
                 }
