@@ -232,16 +232,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
                 val audioManager = getSystemService(android.media.AudioManager::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
-                        .setAudioAttributes(android.media.AudioAttributes.Builder()
-                            .setUsage(android.media.AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .build())
-                        .build()
-                    audioManager?.requestAudioFocus(focusRequest)
-                    staticAudioFocusRequest = focusRequest
-                }
+                // No audio focus request needed - speech recognizer already released the mic above
                 mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     MediaRecorder(this)
                 } else {

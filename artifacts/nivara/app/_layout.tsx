@@ -22,7 +22,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
 import "@/tasks/backgroundProtection";
 
 if (Platform.OS !== "web") {
@@ -41,6 +41,23 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+function PendingSosChecker() {
+  const { triggerSOS } = useApp();
+  useEffect(() => {
+    // Check pendingSOS on mount - app may have been launched/reopened due to BG shake.
+    // Always route through triggerSOS(true) so SMS is sent reliably (native already handles recording).
+    if (Platform.OS === "android") {
+      setTimeout(() => {
+        try {
+          NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
+            if (pending) triggerSOS(true);
+          }).catch(() => {});
+        } catch (e) {}
+      }, 1500);
+    }
+  }, [triggerSOS]);
+  return null;
+}
 function RootLayoutNav() {
   return (
     <Stack>
@@ -71,18 +88,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  useEffect(() => {
-    // Check pendingSOS on initial mount - app may have been launched by BG shake
-    if (Platform.OS === "android") {
-      setTimeout(() => {
-        try {
-          NativeModules.NivaraService?.getAndClearPendingSOS?.().then((pending: boolean) => {
-            if (pending) router.replace("/sos-active");
-          }).catch(() => {});
-        } catch (e) {}
-      }, 1500);
-    }
-  }, []);
 
   useEffect(() => {
     // Track app foreground/background state globally
@@ -119,6 +124,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AppProvider>
+            <PendingSosChecker />
             <GestureHandlerRootView>
               
                 <RootLayoutNav />
