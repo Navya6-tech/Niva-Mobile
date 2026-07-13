@@ -159,7 +159,7 @@ export default function SOSActiveScreen() {
         // Stop native recording and save metadata
         const filePath = await Promise.race([
           NativeModules.NivaraService?.stopBackgroundRecording?.() ?? Promise.resolve(null),
-          new Promise(resolve => setTimeout(() => resolve(null), 2000))
+          new Promise(resolve => setTimeout(() => resolve(null), 5000))
         ]);
         console.log("NIVARA JS: stopBackgroundRecording returned filePath=", filePath);
         if (filePath) {

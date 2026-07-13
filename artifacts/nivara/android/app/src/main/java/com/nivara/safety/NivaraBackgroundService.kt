@@ -28,20 +28,32 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var isSosRecording = false
         var staticMediaRecorder: MediaRecorder? = null
         fun stopRecordingSafe(): String? {
-            return try {
+            val wasRecording = isRecording
+            val result = try {
                 staticMediaRecorder?.stop()
                 staticMediaRecorder?.release()
                 staticMediaRecorder = null
                 isRecording = false
-                android.util.Log.d("NIVARA", "stopRecordingSafe: finalized recording, path=$recordingFilePath")
                 recordingFilePath
             } catch (e: Exception) {
                 android.util.Log.e("NIVARA", "stopRecordingSafe error: ${e.message}")
                 staticMediaRecorder?.release()
                 staticMediaRecorder = null
                 isRecording = false
-                recordingFilePath
+                null
             }
+            // Only return the path if we were actually recording AND the file has real content
+            if (!wasRecording || result == null) {
+                android.util.Log.e("NIVARA", "stopRecordingSafe: no valid recording was in progress")
+                return null
+            }
+            val f = java.io.File(result)
+            if (!f.exists() || f.length() < 1000) {
+                android.util.Log.e("NIVARA", "stopRecordingSafe: file invalid or too small, size=${if (f.exists()) f.length() else -1}")
+                return null
+            }
+            android.util.Log.d("NIVARA", "stopRecordingSafe: finalized recording, path=$result, size=${f.length()}")
+            return result
         }
         var audioRecordingEnabled = false
         var voiceTriggerEnabled = false
