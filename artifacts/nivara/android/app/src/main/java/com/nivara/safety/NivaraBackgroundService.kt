@@ -380,6 +380,15 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         super.onTaskRemoved(rootIntent)
     }
     override fun onDestroy() {
+        // Finalize any in-progress recording so the file isn't corrupted
+        if (isRecording) {
+            try {
+                mediaRecorder?.stop()
+                mediaRecorder?.release()
+            } catch (e: Exception) {}
+            mediaRecorder = null
+            isRecording = false
+        }
         sensorManager.unregisterListener(this)
         restartHandler.removeCallbacks(restartRunnable)
         speechRecognizer?.destroy()

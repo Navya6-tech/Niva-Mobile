@@ -159,14 +159,31 @@ export default function SOSActiveScreen() {
         ]);
         if (filePath) {
           const dur = Date.now() - (sosStartTime ?? Date.now());
-          await saveRecordingMeta({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            uri: 'file://' + filePath,
-            date: Date.now(),
-            durationMs: dur,
-            size: 0,
-            keepForever: false,
-          });
+          try {
+            const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+            const permanentUri = FileSystem.documentDirectory + "sos_" + id + ".m4a";
+            await FileSystem.copyAsync({ from: 'file://' + filePath, to: permanentUri });
+            const info = await FileSystem.getInfoAsync(permanentUri, { size: true });
+            const size = info.size ?? 0;
+            await saveRecordingMeta({
+              id,
+              uri: permanentUri,
+              date: Date.now(),
+              durationMs: dur,
+              size,
+              keepForever: false,
+            });
+          } catch (e) {
+            // Fallback: save with native path directly
+            await saveRecordingMeta({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              uri: 'file://' + filePath,
+              date: Date.now(),
+              durationMs: dur,
+              size: 0,
+              keepForever: false,
+            });
+          }
         }
         // Also save JS recording if it happened
         if (recordingUriRef.current && recordingUriRef.current !== ('file://' + filePath)) {
