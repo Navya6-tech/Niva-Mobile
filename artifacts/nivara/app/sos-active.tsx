@@ -144,19 +144,24 @@ export default function SOSActiveScreen() {
   const openLocation = () => { if (locationLink) Linking.openURL(locationLink); };
 
   const handleMarkSafe = () => {
+    console.log("NIVARA JS: handleMarkSafe called");
     // Call markSafe immediately - don't await anything that could block
     markSafe();
+    console.log("NIVARA JS: markSafe() done, starting cleanup");
     // Do cleanup async without blocking UI
     (async () => {
+      console.log("NIVARA JS: cleanup IIFE started");
       try { if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e) {}
       try { await Promise.race([stopRecordingInternal(), new Promise(r => setTimeout(r, 2000))]); } catch (e) {}
       try { await soundRef.current?.unloadAsync(); soundRef.current = null; } catch (e) {}
+      console.log("NIVARA JS: about to call stopBackgroundRecording, NivaraService exists=", !!NativeModules.NivaraService);
       try {
         // Stop native recording and save metadata
         const filePath = await Promise.race([
           NativeModules.NivaraService?.stopBackgroundRecording?.() ?? Promise.resolve(null),
           new Promise(resolve => setTimeout(() => resolve(null), 2000))
         ]);
+        console.log("NIVARA JS: stopBackgroundRecording returned filePath=", filePath);
         if (filePath) {
           const dur = Date.now() - (sosStartTime ?? Date.now());
           try {
