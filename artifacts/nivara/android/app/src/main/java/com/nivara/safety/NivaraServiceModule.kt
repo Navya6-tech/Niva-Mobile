@@ -65,11 +65,32 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     }
     @ReactMethod fun triggerSOSFromJS(promise: Promise) {
         try {
-            // Reset cooldown so JS trigger always works
             NivaraBackgroundService.instance?.resetLastSosTrigger()
-            NivaraBackgroundService.instance?.triggerSOSPublic("voice_js")
+            if (NivaraBackgroundService.instance != null) {
+                NivaraBackgroundService.instance?.triggerSOSPublic("voice_js")
+                android.util.Log.d("NIVARA", "triggerSOSFromJS: called instance")
+            } else {
+                // Instance null - start service and trigger via broadcast
+                android.util.Log.d("NIVARA", "triggerSOSFromJS: instance null, starting service")
+                val i = android.content.Intent(reactApplicationContext, NivaraBackgroundService::class.java).apply {
+                    action = NivaraBackgroundService.ACTION_START
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    reactApplicationContext.startForegroundService(i)
+                } else {
+                    reactApplicationContext.startService(i)
+                }
+                // Delay trigger to allow service to start
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    NivaraBackgroundService.instance?.resetLastSosTrigger()
+                    NivaraBackgroundService.instance?.triggerSOSPublic("voice_js")
+                }, 1000)
+            }
             promise.resolve(true)
-        } catch (e: Exception) { promise.resolve(false) }
+        } catch (e: Exception) { 
+            android.util.Log.e("NIVARA", "triggerSOSFromJS error: ${e.message}")
+            promise.resolve(false) 
+        }
     }
     @ReactMethod fun setAudioRecordingEnabled(enabled: Boolean) { 
         NivaraBackgroundService.audioRecordingEnabled = enabled

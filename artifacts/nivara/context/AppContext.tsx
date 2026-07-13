@@ -201,12 +201,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSosStartTime(Date.now());
     setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
     router.replace("/sos-active");
-    // Trigger native SMS and recording
+    // Trigger native recording
     try {
       const { NativeModules } = require("react-native");
       NativeModules.NivaraService?.triggerSOSFromJS?.();
     } catch (e) {}
-// Native handles SMS and recording
+    // Send SMS via JS direct-sms (proven reliable)
+    (async () => {
+      try {
+        const Location = await import("expo-location");
+        const loc = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
+        ]);
+        const { latitude, longitude } = loc.coords;
+        const link = "https://maps.google.com/maps?q=" + latitude + "," + longitude;
+        const message = "NIVARA EMERGENCY ALERT. I need help immediately. My location: " + link;
+        const phones = contacts.map((c) => c.phone).filter(Boolean);
+        if (phones.length > 0) {
+          const { sendSMS } = require("direct-sms");
+          sendSMS(phones, message);
+        }
+      } catch (e) {
+        try {
+          const phones = contacts.map((c) => c.phone).filter(Boolean);
+          if (phones.length > 0) {
+            const { sendSMS } = require("direct-sms");
+            sendSMS(phones, "NIVARA EMERGENCY ALERT. I need help immediately. Location unavailable.");
+          }
+        } catch (e2) {}
+      }
+    })();
   }, [contacts]);
   const cancelSOS_resetRef = useCallback(() => {
     sosActiveRef.current = false;

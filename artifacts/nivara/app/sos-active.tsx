@@ -158,20 +158,25 @@ export default function SOSActiveScreen() {
           new Promise(resolve => setTimeout(() => resolve(null), 2000))
         ]);
         if (filePath) {
+          const dur = Date.now() - (sosStartTime ?? Date.now());
           await saveRecordingMeta({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             uri: 'file://' + filePath,
-            duration: Date.now() - (sosStartTime ?? Date.now()),
-            date: new Date().toISOString(),
-            kept: false,
+            date: Date.now(),
+            durationMs: dur,
+            size: 0,
+            keepForever: false,
           });
         }
         // Also save JS recording if it happened
         if (recordingUriRef.current && recordingUriRef.current !== ('file://' + filePath)) {
           await saveRecordingMeta({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
             uri: recordingUriRef.current,
-            duration: recordingMsRef.current || 0,
-            date: new Date().toISOString(),
-            kept: false,
+            date: Date.now(),
+            durationMs: recordingMsRef.current || 0,
+            size: 0,
+            keepForever: false,
           });
         }
       } catch (e) {}
