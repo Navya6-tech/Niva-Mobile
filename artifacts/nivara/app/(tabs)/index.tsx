@@ -206,8 +206,8 @@ export default function HomeScreen() {
       );
       soundRef.current = sound;
       setPlayingId(rec.id);
-    } catch {
-      Alert.alert("Error", "Could not play this recording.");
+    } catch (e: any) {
+      Alert.alert("Error", "Could not play this recording. " + (e?.message || String(e)));
     }
   }, [playingId, t]);
 
