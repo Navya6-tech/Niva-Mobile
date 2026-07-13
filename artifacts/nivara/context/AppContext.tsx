@@ -46,7 +46,7 @@ interface AppContextType {
   updateContact: (contact: EmergencyContact) => Promise<void>;
   deleteContact: (id: string) => Promise<void>;
   updateSettings: (partial: Partial<AppSettings>) => Promise<void>;
-  triggerSOS: () => void;
+  triggerSOS: (skipNativeTrigger?: boolean) => void;
   cancelSOS: () => void;
   startCheckIn: (minutes: number) => void;
   stopCheckIn: () => void;
@@ -194,18 +194,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [contacts]);
 
-  const triggerSOS = useCallback(() => {
+  const triggerSOS = useCallback((skipNativeTrigger?: boolean) => {
     if (sosActiveRef.current) return;
     sosActiveRef.current = true;
     setSosActive(true);
     setSosStartTime(Date.now());
     setSettings(prev => ({ ...prev, voiceTriggerActive: false }));
     router.replace("/sos-active");
-    // Trigger native recording
-    try {
-      const { NativeModules } = require("react-native");
-      NativeModules.NivaraService?.triggerSOSFromJS?.();
-    } catch (e) {}
+    // Trigger native recording (skip if native already started it, e.g. from shake)
+    if (!skipNativeTrigger) {
+      try {
+        const { NativeModules } = require("react-native");
+        NativeModules.NivaraService?.triggerSOSFromJS?.();
+      } catch (e) {}
+    }
     // Send SMS via JS direct-sms (proven reliable)
     (async () => {
       try {

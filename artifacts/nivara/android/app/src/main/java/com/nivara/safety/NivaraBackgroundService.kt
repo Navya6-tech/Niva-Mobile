@@ -340,38 +340,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         isSosRecording = true
         NivaraServiceModule.pendingSOS = true
         if (audioRecordingEnabled) startBackgroundRecording()
-        // Send SMS immediately from native
-        Thread {
-            try {
-                var location = NivaraServiceModule.lastKnownLocation
-                try {
-                    val lm = getSystemService(android.location.LocationManager::class.java)
-                    val fresh = lm?.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
-                        ?: lm?.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
-                    if (fresh != null) location = fresh
-                } catch (e: Exception) {}
-                val message = if (location != null) {
-                    "🚨 EMERGENCY SOS! I need help. My location: https://maps.google.com/maps?q=${location.latitude},${location.longitude}"
-                } else {
-                    "🚨 EMERGENCY SOS! I need help. Please call me immediately."
-                }
-                val phones = NivaraServiceModule.emergencyPhones
-                android.util.Log.d("NIVARA", "SMS phones count: ${phones.size}")
-                android.util.Log.d("NIVARA", "SMS about to send to ${phones.size} phones, message length=${message.length}")
-                if (phones.isNotEmpty()) {
-                    val smsPhones = phones
-                    val smsMsg = message
-                    android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        sendEmergencySMS(smsPhones, smsMsg)
-                        android.util.Log.d("NIVARA", "SMS sent on main thread")
-                    }
-                } else {
-                    android.util.Log.e("NIVARA", "SMS phones empty!")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("NIVARA", "SMS thread error: ${e.message}")
-            }
-        }.start()
+        // SMS is now handled by JS via the SOSTriggered broadcast listener (more reliable, avoids duplicate/conflicting sends)
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)

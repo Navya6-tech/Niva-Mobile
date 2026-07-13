@@ -140,8 +140,10 @@ export default function HomeScreen() {
 
   const onSOSTriggered = useCallback((source: string) => {
     // Only trigger from native service if countdown is not already visible
+    // Native already started recording (and possibly SMS attempt) for shake/native triggers,
+    // so skip re-triggering native from JS to avoid double-recording/duplicate SMS
     if (!countdownVisibleRef.current) {
-      triggerSOS();
+      triggerSOS(true);
     }
   }, [triggerSOS]);
 
@@ -511,7 +513,7 @@ export default function HomeScreen() {
                         {formatRecordingDate(rec.date)}
                       </Text>
                       <Text style={[styles.recInfo, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                        {formatRecordingDuration(rec.durationMs)} · {formatRecordingSize(rec.size)}
+                        {formatRecordingDuration(rec.durationMs)}
                       </Text>
                       {!rec.keepForever && (
                         <Text style={[styles.autoDeleteLabel, { color: colors.warning, fontFamily: "Poppins_400Regular" }]}>
