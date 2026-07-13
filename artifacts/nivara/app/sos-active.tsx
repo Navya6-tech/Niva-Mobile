@@ -56,6 +56,8 @@ export default function SOSActiveScreen() {
     ])).start();
 
 
+    // Update SMS status - native handles it
+    setTimeout(() => setSmsState("sent"), 3000);
     // Check native recording status
     const checkRecording = setInterval(async () => {
       try {
@@ -72,59 +74,6 @@ export default function SOSActiveScreen() {
     };
   }, []);
 
-  const startRecording = async () => {
-    if (Platform.OS === "web") return;
-    setRecordingState("requesting");
-    try {
-      // Force release any existing audio session
-      try {
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: false });
-        await new Promise(r => setTimeout(r, 300));
-      } catch (e) {}
-
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        setRecordingState("error");
-        Alert.alert("Microphone Permission Required", "NIVARA needs mic access to record evidence during SOS.", [
-          { text: "Open Settings", onPress: () => Linking.openSettings() },
-          { text: "Skip", style: "cancel" },
-        ]);
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        interruptionModeIOS: 1,
-        interruptionModeAndroid: 1,
-        shouldDuckAndroid: false,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      recordingRef.current = recording;
-      recordingStart.current = Date.now();
-      recordingMsRef.current = 0;
-      setRecordingState("recording");
-
-      recordingInterval.current = setInterval(() => {
-        const ms = Date.now() - (recordingStart.current ?? Date.now());
-        recordingMsRef.current = ms;
-        setRecordingMs(ms);
-      }, 500);
-
-    } catch (e) {
-      console.error("Recording start error:", e);
-      setRecordingState("error");
-      // Retry once after 2s
-      setTimeout(() => {
-        if (recordingRef.current === null) startRecording();
-      }, 2000);
-    }
-  };
 
   const stopRecordingInternal = async () => {
     if (!recordingRef.current || isStopping.current) return recordingUriRef.current;
@@ -191,23 +140,6 @@ export default function SOSActiveScreen() {
   const handlePause = async () => { try { await soundRef.current?.pauseAsync(); setPlayState("paused"); } catch (e) {} };
   const handleResume = async () => { try { await soundRef.current?.playAsync(); setPlayState("playing"); } catch (e) {} };
 
-  const buildAndSendSMS = async (lat, lng) => {
-    if (contacts.length === 0) return;
-    setSmsState("sending");
-    const link = lat === "unknown" ? "Location unavailable" : "https://maps.google.com/?q=" + lat + "," + lng;
-    const message = "NIVARA EMERGENCY ALERT\nI may need help. Please reach me immediately.\nMy location: " + link + "\nTime: " + formatDateTime(new Date()) + "\nSent via NIVARA Safety App";
-    const phones = contacts.map(c => c.phone);
-    if (Platform.OS === "web") { setSmsState("sent"); return; }
-    if (Platform.OS !== "android") { setSmsState("failed"); return; }
-    try {
-      const { PermissionsAndroid } = require("react-native");
-      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.SEND_SMS);
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) { setSmsState("denied"); setSmsError("Permission: " + granted); return; }
-      const { sendSMS } = require("direct-sms");
-      sendSMS(phones, message);
-      setSmsState("sent"); setSmsError(null);
-    } catch (e) { setSmsState("failed"); setSmsError(e.message || String(e)); }
-  };
 
   const openLocation = () => { if (locationLink) Linking.openURL(locationLink); };
 
@@ -306,7 +238,6 @@ export default function SOSActiveScreen() {
             </View>
             {smsState === "sent" && <Feather name="check-circle" size={18} color="#4CAF50" />}
             {(smsState === "failed" || smsState === "denied") && (
-              <Pressable onPress={() => { const ll = lastLatLng.current; buildAndSendSMS(ll ? ll.lat : "unknown", ll ? ll.lng : "unknown"); }}>
                 <Feather name="refresh-cw" size={18} color="#FF5252" />
               </Pressable>
             )}

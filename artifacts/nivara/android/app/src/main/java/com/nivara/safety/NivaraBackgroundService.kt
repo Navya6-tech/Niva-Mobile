@@ -176,15 +176,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private var lastSosTrigger = 0L
     private fun startBackgroundRecording() {
         android.util.Log.d("NIVARA", "startBackgroundRecording called, isSosRecording=$isSosRecording")
-        val latch = java.util.concurrent.CountDownLatch(1)
-        android.os.Handler(android.os.Looper.getMainLooper()).post {
-            restartHandler.removeCallbacks(restartRunnable)
-            speechRecognizer?.stopListening()
-            speechRecognizer?.destroy()
-            speechRecognizer = null
-            latch.countDown()
-        }
-        // Stop speech recognition - no longer needed after SOS triggered
+        // Stop speech recognition on main thread to release mic
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             restartHandler.removeCallbacks(restartRunnable)
             speechRecognizer?.stopListening()
@@ -192,9 +184,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
         Thread {
             android.util.Log.d("NIVARA", "Recording thread started")
-            Thread.sleep(1500) // Wait for mic to release
-            latch.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS)
-            Thread.sleep(500)
+            Thread.sleep(2000) // Wait for mic to release
             try {
                 val dir = getExternalFilesDir(null) ?: filesDir
                 val file = java.io.File(dir, "sos_recording_${System.currentTimeMillis()}.m4a")
@@ -258,11 +248,23 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     }
     private fun sendEmergencySMS(phones: List<String>, message: String) {
         try {
+            val subId = android.telephony.SubscriptionManager.getDefaultSmsSubscriptionId()
+            android.util.Log.d("NIVARA", "SMS using subId=$subId")
             val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                getSystemService(android.telephony.SmsManager::class.java)
+                if (subId != android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                    applicationContext.getSystemService(android.telephony.SmsManager::class.java)
+                        ?.createForSubscriptionId(subId)
+                        ?: applicationContext.getSystemService(android.telephony.SmsManager::class.java)
+                } else {
+                    applicationContext.getSystemService(android.telephony.SmsManager::class.java)
+                }
             } else {
                 @Suppress("DEPRECATION")
-                android.telephony.SmsManager.getDefault()
+                if (subId != android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                    android.telephony.SmsManager.getSmsManagerForSubscriptionId(subId)
+                } else {
+                    android.telephony.SmsManager.getDefault()
+                }
             }
             for (phone in phones) {
                 try {
