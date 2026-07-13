@@ -237,10 +237,7 @@ export default function SOSActiveScreen() {
               {smsError != null && <Text style={{ color: "#FF5252", fontSize: 10, fontFamily: "Poppins_400Regular", marginTop: 4 }}>{smsError}</Text>}
             </View>
             {smsState === "sent" && <Feather name="check-circle" size={18} color="#4CAF50" />}
-            {(smsState === "failed" || smsState === "denied") && (
-                <Feather name="refresh-cw" size={18} color="#FF5252" />
-              </Pressable>
-            )}
+
           </View>
         </View>
 
