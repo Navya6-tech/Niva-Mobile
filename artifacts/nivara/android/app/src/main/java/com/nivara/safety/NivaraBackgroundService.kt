@@ -27,6 +27,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var isRecording = false
         var isSosRecording = false
         var staticMediaRecorder: MediaRecorder? = null
+        var staticAudioFocusRequest: Any? = null
         fun stopRecordingSafe(): String? {
             val wasRecording = isRecording
             val result = try {
@@ -51,6 +52,19 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             if (!f.exists() || f.length() < 1000) {
                 android.util.Log.e("NIVARA", "stopRecordingSafe: file invalid or too small, size=${if (f.exists()) f.length() else -1}")
                 return null
+            }
+            // Release audio focus and reset audio mode so playback works normally afterward
+            try {
+                val ctx = instance?.applicationContext
+                val am = ctx?.getSystemService(android.media.AudioManager::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && staticAudioFocusRequest is android.media.AudioFocusRequest) {
+                    am?.abandonAudioFocusRequest(staticAudioFocusRequest as android.media.AudioFocusRequest)
+                }
+                staticAudioFocusRequest = null
+                am?.mode = android.media.AudioManager.MODE_NORMAL
+                am?.isSpeakerphoneOn = false
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "audio focus release error: ${e.message}")
             }
             android.util.Log.d("NIVARA", "stopRecordingSafe: finalized recording, path=$result, size=${f.length()}")
             return result
@@ -226,6 +240,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                             .build())
                         .build()
                     audioManager?.requestAudioFocus(focusRequest)
+                    staticAudioFocusRequest = focusRequest
                 }
                 mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     MediaRecorder(this)

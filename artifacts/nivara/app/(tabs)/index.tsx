@@ -191,6 +191,14 @@ export default function HomeScreen() {
       }
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { Audio } = require("expo-av");
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+      } catch (e) {}
       const { sound } = await Audio.Sound.createAsync(
         { uri: rec.uri },
         { shouldPlay: true },
