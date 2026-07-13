@@ -108,11 +108,13 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
     @ReactMethod fun getAndClearPendingSOS(promise: Promise) { promise.resolve(pendingSOS); pendingSOS = false }
 
     @ReactMethod fun stopBackgroundRecording(promise: Promise) {
+        android.util.Log.d("NIVARA", "stopBackgroundRecording CALLED FROM JS")
         try {
-            val filePath = NivaraBackgroundService.stopRecordingStatic() ?: NivaraBackgroundService.recordingFilePath
-            android.util.Log.d("NIVARA", "stopBackgroundRecording: filePath=$filePath, instance=${NivaraBackgroundService.instance != null}")
+            val filePath = NivaraBackgroundService.stopRecordingSafe()
+            android.util.Log.d("NIVARA", "stopBackgroundRecording: filePath=$filePath")
             promise.resolve(filePath)
         } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "stopBackgroundRecording exception: ${e.message}")
             promise.resolve(NivaraBackgroundService.recordingFilePath)
         }
     }

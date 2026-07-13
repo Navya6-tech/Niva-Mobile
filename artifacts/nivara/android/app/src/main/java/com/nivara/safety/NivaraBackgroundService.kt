@@ -26,6 +26,23 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         var recordingFilePath: String? = null
         var isRecording = false
         var isSosRecording = false
+        var staticMediaRecorder: MediaRecorder? = null
+        fun stopRecordingSafe(): String? {
+            return try {
+                staticMediaRecorder?.stop()
+                staticMediaRecorder?.release()
+                staticMediaRecorder = null
+                isRecording = false
+                android.util.Log.d("NIVARA", "stopRecordingSafe: finalized recording, path=$recordingFilePath")
+                recordingFilePath
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "stopRecordingSafe error: ${e.message}")
+                staticMediaRecorder?.release()
+                staticMediaRecorder = null
+                isRecording = false
+                recordingFilePath
+            }
+        }
         var audioRecordingEnabled = false
         var voiceTriggerEnabled = false
         var instance: NivaraBackgroundService? = null
@@ -204,6 +221,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
                     @Suppress("DEPRECATION")
                     MediaRecorder()
                 }
+                staticMediaRecorder = mediaRecorder
                 mediaRecorder?.apply {
                     setAudioSource(MediaRecorder.AudioSource.MIC)
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -382,12 +400,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     override fun onDestroy() {
         // Finalize any in-progress recording so the file isn't corrupted
         if (isRecording) {
-            try {
-                mediaRecorder?.stop()
-                mediaRecorder?.release()
-            } catch (e: Exception) {}
-            mediaRecorder = null
-            isRecording = false
+            stopRecordingSafe()
         }
         sensorManager.unregisterListener(this)
         restartHandler.removeCallbacks(restartRunnable)
