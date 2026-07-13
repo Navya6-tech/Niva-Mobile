@@ -210,10 +210,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const Location = await import("expo-location");
-        const loc = await Promise.race([
-          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
-        ]);
+        let loc;
+        try {
+          loc = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000))
+          ]);
+        } catch (e1) {
+          loc = await Location.getLastKnownPositionAsync();
+        }
+        if (!loc) throw new Error("no location");
         const { latitude, longitude } = loc.coords;
         const link = "https://maps.google.com/maps?q=" + latitude + "," + longitude;
         const message = "NIVARA EMERGENCY ALERT. I need help immediately. My location: " + link;
