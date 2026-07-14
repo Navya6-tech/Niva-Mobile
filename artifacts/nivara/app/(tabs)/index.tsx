@@ -194,6 +194,10 @@ export default function HomeScreen() {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { Audio } = require("expo-av");
       try {
+        const { NativeModules } = require("react-native");
+        NativeModules.NivaraService?.prepareAudioForPlayback?.();
+      } catch (e) {}
+      try {
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           playsInSilentModeIOS: true,

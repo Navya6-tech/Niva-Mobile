@@ -212,14 +212,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const Location = await import("expo-location");
-        let loc;
-        try {
-          loc = await Promise.race([
-            Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000))
-          ]);
-        } catch (e1) {
-          loc = await Location.getLastKnownPositionAsync();
+        // Try cached last-known location FIRST (instant) so SMS sends fast
+        let loc = await Location.getLastKnownPositionAsync().catch(() => null);
+        if (!loc) {
+          // No cache available - fall back to a fresh fix with a short timeout
+          try {
+            loc = await Promise.race([
+              Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000))
+            ]);
+          } catch (e1) {}
         }
         if (!loc) throw new Error("no location");
         const { latitude, longitude } = loc.coords;

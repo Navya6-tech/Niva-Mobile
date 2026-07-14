@@ -101,6 +101,16 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         NivaraBackgroundService.voiceTriggerEnabled = enabled
         android.util.Log.d("NIVARA", "setVoiceTriggerEnabled: $enabled, current=${NivaraBackgroundService.voiceTriggerEnabled}")
     }
+    @ReactMethod fun prepareAudioForPlayback() {
+        try {
+            val am = reactApplicationContext.getSystemService(android.media.AudioManager::class.java)
+            am?.mode = android.media.AudioManager.MODE_NORMAL
+            am?.isSpeakerphoneOn = true
+            android.util.Log.d("NIVARA", "prepareAudioForPlayback: forced speaker mode for playback")
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "prepareAudioForPlayback error: ${e.message}")
+        }
+    }
     @ReactMethod fun setAppForeground(isForeground: Boolean) { 
         NivaraBackgroundService.isAppInForeground = isForeground
         android.util.Log.d("NIVARA", "setAppForeground: $isForeground, isAppInForeground=${NivaraBackgroundService.isAppInForeground}")
