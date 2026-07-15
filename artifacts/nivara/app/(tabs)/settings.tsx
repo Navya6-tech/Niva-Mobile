@@ -262,7 +262,21 @@ export default function SettingsScreen() {
         <SectionHeader title={t("sosBehaviorSection")} />
         <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.border, borderWidth: 1 }]}>
           <SettingRow
-            icon={<Feather name="smartphone" size={18} color="#9C27B0" />}
+            icon={<Feather name="smartphone" size={18} color={settings.shakeTriggerActive ? "#9C27B0" : colors.mutedForeground} />}
+            label={t("shakeTriggerLabel")}
+            sublabel={settings.shakeTriggerActive ? t("shakeTriggerOn") : t("shakeTriggerOff")}
+            right={
+              <Switch
+                value={settings.shakeTriggerActive}
+                onValueChange={(v) => updateSettings({ shakeTriggerActive: v })}
+                trackColor={{ true: colors.primary, false: colors.muted }}
+                thumbColor="#fff"
+              />
+            }
+          />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <SettingRow
+            icon={<Feather name="activity" size={18} color="#9C27B0" />}
             label={t("shakeToSOS")}
             sublabel={sensitivityLabel(settings.shakeSensitivity)}
             right={null}
@@ -374,12 +388,6 @@ export default function SettingsScreen() {
               thumbColor="#fff"
             />
           </View>
-          <View style={[styles.bgNote, { backgroundColor: colors.muted + "80" }]}>
-            <Feather name="info" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.bgNoteText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-              {t("bgNote")}
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -429,9 +437,4 @@ const styles = StyleSheet.create({
   durationRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 14, paddingTop: 0 },
   durationChip: { paddingHorizontal: 14, paddingVertical: 7 },
   durationText: { fontSize: 13 },
-  bgNote: {
-    flexDirection: "row", gap: 8, padding: 12, alignItems: "flex-start",
-    borderBottomLeftRadius: 18, borderBottomRightRadius: 18,
-  },
-  bgNoteText: { flex: 1, fontSize: 12, lineHeight: 18 },
 });

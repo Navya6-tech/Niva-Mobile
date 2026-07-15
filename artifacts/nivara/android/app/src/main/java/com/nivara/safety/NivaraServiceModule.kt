@@ -97,9 +97,23 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
         reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
             .edit().putBoolean("audioRecording", enabled).apply()
     }
+    @ReactMethod fun setShakeTriggerEnabled(enabled: Boolean) {
+        NivaraBackgroundService.shakeTriggerEnabled = enabled
+        reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("shakeTrigger", enabled).apply()
+        android.util.Log.d("NIVARA", "setShakeTriggerEnabled: $enabled")
+    }
     @ReactMethod fun setVoiceTriggerEnabled(enabled: Boolean) { 
         NivaraBackgroundService.voiceTriggerEnabled = enabled
         android.util.Log.d("NIVARA", "setVoiceTriggerEnabled: $enabled, current=${NivaraBackgroundService.voiceTriggerEnabled}")
+    }
+    @ReactMethod fun cancelSosAlert() {
+        try {
+            reactApplicationContext.getSystemService(android.app.NotificationManager::class.java)?.cancel(998)
+            android.util.Log.d("NIVARA", "cancelSosAlert: dismissed SOS alert notification")
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "cancelSosAlert error: ${e.message}")
+        }
     }
     @ReactMethod fun prepareAudioForPlayback() {
         try {

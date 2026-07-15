@@ -10,7 +10,8 @@ export function useNativeBackgroundService(
   triggerPhrases?: string[],
   emergencyPhones?: string[],
   audioRecordingEnabled?: boolean,
-  voiceTriggerEnabled?: boolean
+  voiceTriggerEnabled?: boolean,
+  shakeTriggerEnabled?: boolean
 ) {
   const start = useCallback(async () => {
     if (Platform.OS !== "android" || !NivaraService) return;
@@ -20,7 +21,8 @@ export function useNativeBackgroundService(
     }
     try { await NivaraService.setAudioRecordingEnabled(audioRecordingEnabled ?? false); } catch (e) {}
     try { await NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
-  }, [emergencyPhones, audioRecordingEnabled, voiceTriggerEnabled]);
+    try { await NivaraService.setShakeTriggerEnabled?.(shakeTriggerEnabled ?? true); } catch (e) {}
+  }, [emergencyPhones, audioRecordingEnabled, voiceTriggerEnabled, shakeTriggerEnabled]);
 
   const stop = useCallback(async () => {
     if (Platform.OS !== "android" || !NivaraService) return;
@@ -67,6 +69,10 @@ export function useNativeBackgroundService(
     if (Platform.OS !== "android" || !NivaraService) return;
     try { NivaraService.setVoiceTriggerEnabled(voiceTriggerEnabled ?? false); } catch (e) {}
   }, [voiceTriggerEnabled]);
+  useEffect(() => {
+    if (Platform.OS !== "android" || !NivaraService) return;
+    try { NivaraService.setShakeTriggerEnabled?.(shakeTriggerEnabled ?? true); } catch (e) {}
+  }, [shakeTriggerEnabled]);
 }
 
 export async function openAccessibilitySettings() {

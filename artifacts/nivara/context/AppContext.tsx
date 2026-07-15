@@ -22,6 +22,7 @@ export interface AppSettings {
   stealthMode: boolean;
   checkInDuration: number;
   shakeSensitivity: "low" | "medium" | "high";
+  shakeTriggerActive: boolean;
   audioRecording: boolean;
   voiceTriggerActive: boolean;
   onboardingComplete: boolean;
@@ -58,6 +59,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   stealthMode: false,
   checkInDuration: 30,
   shakeSensitivity: "medium",
+  shakeTriggerActive: true,
   audioRecording: false,
   voiceTriggerActive: false,
   onboardingComplete: false,
@@ -126,6 +128,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (NativeModules.NivaraService) {
               NativeModules.NivaraService.setAudioRecordingEnabled(merged.audioRecording ?? false);
               NativeModules.NivaraService.setVoiceTriggerEnabled(merged.voiceTriggerActive ?? false);
+              NativeModules.NivaraService.setShakeTriggerEnabled?.(merged.shakeTriggerActive ?? true);
             } else if (retries < 5) {
               setTimeout(() => syncToNative(retries + 1), 1000);
             }

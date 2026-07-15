@@ -38,6 +38,10 @@ function NativeTabLayout() {
           <Icon sf={{ default: "mappin.circle", selected: "mappin.circle.fill" }} />
           <Label>{t("tabNearby")}</Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="recordings">
+          <Icon sf={{ default: "mic.circle", selected: "mic.circle.fill" }} />
+          <Label>{t("tabRecordings")}</Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
           <Label>{t("tabSettings")}</Label>
@@ -102,6 +106,13 @@ function ClassicTabLayout() {
         options={{
           title: t("tabNearby"),
           tabBarIcon: ({ color }) => <Feather name="map-pin" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="recordings"
+        options={{
+          title: t("tabRecordings"),
+          tabBarIcon: ({ color }) => <Feather name="mic" size={22} color={color} />,
         }}
       />
       <Tabs.Screen

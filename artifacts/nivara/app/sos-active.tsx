@@ -25,7 +25,7 @@ function formatDateTime(date) {
 export default function SOSActiveScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { contacts, sosStartTime, markSafe } = useApp();
+  const { contacts, sosStartTime, markSafe, settings } = useApp();
   const [elapsed, setElapsed] = useState(0);
   const [locationText, setLocationText] = useState("Getting location...");
   const [smsState, setSmsState] = useState("idle");
@@ -49,6 +49,8 @@ export default function SOSActiveScreen() {
   const [playProgress, setPlayProgress] = useState(0);
 
   useEffect(() => {
+    // Dismiss the SOS alert notification now that the user is looking at the SOS screen
+    try { NativeModules.NivaraService?.cancelSosAlert?.(); } catch (e) {}
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     Animated.loop(Animated.sequence([
       Animated.timing(pulse, { toValue: 1.05, duration: 600, useNativeDriver: true }),
@@ -223,31 +225,21 @@ export default function SOSActiveScreen() {
 
         <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16 }]}>
           <View style={styles.cardRow}>
-            <Feather name="mic" size={18} color={recordingState === "recording" ? "#FF5252" : recordingState === "stopped" ? "#4CAF50" : "rgba(255,255,255,0.4)"} />
+            <Feather name="mic" size={18} color={settings?.audioRecording ? "#4CAF50" : "rgba(255,255,255,0.4)"} />
             <View style={styles.cardInfo}>
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.5)", fontFamily: "Poppins_400Regular" }]}>Audio Recording</Text>
               <Text style={[styles.cardValue, { color: "#fff", fontFamily: "Poppins_500Medium" }]}>
-                {recordingState === "requesting" ? "Starting recorder..." :
-                 recordingState === "recording" ? "Recording " + formatDuration(recordingMs) :
-                 recordingState === "stopped" ? "Evidence saved ✓" :
-                 recordingState === "error" ? "Mic unavailable - retrying..." : "Initializing..."}
+                {settings?.audioRecording ? "Recording evidence" : "Off"}
               </Text>
             </View>
-            {recordingState === "recording" && <View style={styles.recDot} />}
-            {recordingState === "stopped" && <Feather name="check-circle" size={18} color="#4CAF50" />}
+            {settings?.audioRecording ? (
+              <Feather name="check-circle" size={18} color="#4CAF50" />
+            ) : (
+              <Feather name="x-circle" size={18} color="rgba(255,255,255,0.4)" />
+            )}
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16 }]}>
-          <View style={styles.cardRow}>
-            <Feather name="map-pin" size={18} color={colors.secondary} />
-            <View style={styles.cardInfo}>
-              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.5)", fontFamily: "Poppins_400Regular" }]}>Live Location</Text>
-              <Text style={[styles.cardValue, { color: "#fff", fontFamily: "Poppins_500Medium" }]}>{locationText}</Text>
-            </View>
-            {locationLink && <Pressable onPress={openLocation}><Feather name="external-link" size={18} color={colors.secondary} /></Pressable>}
-          </View>
-        </View>
 
         <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16 }]}>
           <View style={styles.cardRow}>

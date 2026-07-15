@@ -71,6 +71,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
         var audioRecordingEnabled = false
         var voiceTriggerEnabled = false
+        var shakeTriggerEnabled = true
         var instance: NivaraBackgroundService? = null
         fun stopRecordingStatic(): String? {
             return instance?.stopBackgroundRecording()
@@ -120,6 +121,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         // Load persisted settings from SharedPreferences
         val prefs = getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
         audioRecordingEnabled = prefs.getBoolean("audioRecording", false)
+        shakeTriggerEnabled = prefs.getBoolean("shakeTrigger", true)
         val phonesStr = prefs.getString("phones", "")
         if (!phonesStr.isNullOrEmpty()) {
             NivaraServiceModule.emergencyPhones = phonesStr.split(",").filter { it.isNotEmpty() }
@@ -146,7 +148,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             lastShakeTime = now
             if (now - shakeWindowStart > SHAKE_WINDOW_MS) { shakeWindowStart = now; shakeCount = 0 }
             shakeCount++
-            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; triggerSOS("shake") }
+            if (shakeCount >= SHAKE_COUNT_NEEDED) { shakeCount = 0; shakeWindowStart = 0; if (shakeTriggerEnabled) triggerSOS("shake") }
         }
     }
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -371,7 +373,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         .setContentText("Shake 3x or say your trigger phrase to activate SOS")
         .setSmallIcon(R.mipmap.ic_launcher)
         .setContentIntent(PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-        .setOngoing(true).setPriority(NotificationCompat.PRIORITY_LOW).setSilent(true).build()
+        .setOngoing(true).setPriority(NotificationCompat.PRIORITY_LOW).setSilent(true).setCategory(NotificationCompat.CATEGORY_SERVICE).setAutoCancel(false).build()
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val restartIntent = android.content.Intent(applicationContext, NivaraBackgroundService::class.java).apply {
