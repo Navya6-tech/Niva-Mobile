@@ -2,12 +2,17 @@ import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
+  KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,12 +53,16 @@ const SLIDES = [
 export default function OnboardingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { updateSettings, settings } = useApp();
-  const [step, setStep] = useState<"language" | "slides" | "permissions">("language");
+  const { updateSettings, settings, contacts, addContact } = useApp();
+  const [step, setStep] = useState<"language" | "slides" | "username" | "disclaimer" | "contacts" | "permissions" | "terms">("language");
   const [selectedLang, setSelectedLang] = useState<"en" | "hi">("en");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [requesting, setRequesting] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const lang = settings.language ?? "en";
   const isHi = lang === "hi";
@@ -68,7 +77,7 @@ export default function OnboardingScreen() {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
       setCurrentIndex(currentIndex + 1);
     } else {
-      setStep("permissions");
+      setStep("username");
     }
   };
 
@@ -77,15 +86,215 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleUsernameContinue = async () => {
+    const name = usernameInput.trim();
+    await updateSettings({ username: name || (isHi ? "मित्र" : "Friend") });
+    setStep("disclaimer");
+  };
+
+  const handleDisclaimerContinue = () => {
+    setStep("contacts");
+  };
+
+  const handleAddContact = async () => {
+    const name = contactName.trim();
+    const phone = contactPhone.trim();
+    if (!name || !phone) return;
+    await addContact({ name, phone });
+    setContactName("");
+    setContactPhone("");
+  };
+
+  const handleContactsContinue = () => {
+    setStep("permissions");
+  };
+
+  const handleTermsAccept = async () => {
+    await updateSettings({ termsAccepted: true });
+    await handleGetStarted();
+  };
+
   const handleAllowPermissions = async () => {
     setRequesting(true);
     await requestAllPermissions();
     setRequesting(false);
-    await handleGetStarted();
+    setStep("terms");
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+
+  if (step === "username") {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}
+      >
+        <View style={styles.header}>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.logoText}>N</Text>
+          </View>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
+        </View>
+        <View style={styles.permBody}>
+          <View style={[styles.permIconCircle, { backgroundColor: colors.primary + "15" }]}>
+            <Feather name="user" size={52} color={colors.primary} />
+          </View>
+          <Text style={[styles.permTitle, { color: colors.foreground, fontFamily: "Poppins_700Bold" }]}>
+            {isHi ? "आपका नाम क्या है?" : "What should we\ncall you?"}
+          </Text>
+          <Text style={[styles.permSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+            {isHi ? "यह सिर्फ आपके डिवाइस पर संग्रहीत है" : "This is only stored on your device"}
+          </Text>
+          <TextInput
+            value={usernameInput}
+            onChangeText={setUsernameInput}
+            placeholder={isHi ? "आपका नाम" : "Your name"}
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.textInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Poppins_500Medium" }]}
+            autoCapitalize="words"
+            maxLength={30}
+          />
+        </View>
+        <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
+          <Pressable
+            style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100 }]}
+            onPress={handleUsernameContinue}
+          >
+            <Text style={[styles.nextText, { color: "#fff", fontFamily: "Poppins_600SemiBold" }]}>
+              {isHi ? "जारी रखें" : "Continue"}
+            </Text>
+            <Feather name="arrow-right" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  if (step === "disclaimer") {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
+        <View style={styles.header}>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.logoText}>N</Text>
+          </View>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
+        </View>
+        <View style={styles.permBody}>
+          <View style={[styles.permIconCircle, { backgroundColor: colors.warning + "18" }]}>
+            <Feather name="alert-triangle" size={52} color={colors.warning} />
+          </View>
+          <Text style={[styles.permTitle, { color: colors.foreground, fontFamily: "Poppins_700Bold" }]}>
+            {isHi ? "जारी रखने से पहले" : "Before You\nContinue"}
+          </Text>
+          <Text style={[styles.disclaimerBody, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+            {isHi
+              ? "NIVARA आपातकालीन सेवाओं को कॉल करने का विकल्प नहीं है। तत्काल खतरे में, यदि संभव हो तो सीधे 112 पर कॉल करें। NIVARA आपके भरोसेमंद संपर्कों को सचेत करने और सबूत रिकॉर्ड करने में मदद करता है।"
+              : "NIVARA supplements but does not replace calling emergency services directly. In immediate danger, call 112 (India's emergency number) directly if you can. NIVARA helps alert your trusted contacts and record evidence."}
+          </Text>
+        </View>
+        <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
+          <Pressable
+            style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100 }]}
+            onPress={handleDisclaimerContinue}
+          >
+            <Text style={[styles.nextText, { color: "#fff", fontFamily: "Poppins_600SemiBold" }]}>
+              {isHi ? "मैं समझता/समझती हूं" : "I Understand"}
+            </Text>
+            <Feather name="check" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (step === "contacts") {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}
+      >
+        <View style={styles.header}>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.logoText}>N</Text>
+          </View>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
+        </View>
+        <ScrollView style={styles.contactsScroll} contentContainerStyle={styles.contactsScrollContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.permIconCircle, { backgroundColor: colors.primary + "15", alignSelf: "center" }]}>
+            <Feather name="users" size={52} color={colors.primary} />
+          </View>
+          <Text style={[styles.permTitle, { color: colors.foreground, fontFamily: "Poppins_700Bold", textAlign: "center" }]}>
+            {isHi ? "आपातकालीन संपर्क जोड़ें" : "Add Emergency\nContacts"}
+          </Text>
+          <Text style={[styles.permSub, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular", textAlign: "center" }]}>
+            {isHi ? "SOS को किसी को सचेत करने के लिए कम से कम एक संपर्क चाहिए" : "At least one contact is needed so SOS can alert someone"}
+          </Text>
+          <TextInput
+            value={contactName}
+            onChangeText={setContactName}
+            placeholder={isHi ? "नाम" : "Name"}
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.textInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Poppins_500Medium", marginTop: 20 }]}
+          />
+          <TextInput
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            placeholder={isHi ? "फोन नंबर" : "Phone number"}
+            placeholderTextColor={colors.mutedForeground}
+            keyboardType="phone-pad"
+            style={[styles.textInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Poppins_500Medium", marginTop: 12 }]}
+          />
+          <Pressable
+            style={[styles.addContactBtn, { backgroundColor: colors.primary + "15", borderRadius: 12, marginTop: 12 }]}
+            onPress={handleAddContact}
+          >
+            <Feather name="plus" size={16} color={colors.primary} />
+            <Text style={[styles.addContactBtnText, { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>
+              {isHi ? "संपर्क जोड़ें" : "Add Contact"}
+            </Text>
+          </Pressable>
+          {contacts.length > 0 && (
+            <View style={{ marginTop: 20, gap: 8, width: "100%" }}>
+              {contacts.map((c) => (
+                <View key={c.id} style={[styles.contactChip, { backgroundColor: colors.card, borderRadius: 12, borderColor: colors.border, borderWidth: 1 }]}>
+                  <Feather name="user" size={16} color={colors.primary} />
+                  <Text style={[styles.contactChipText, { color: colors.foreground, fontFamily: "Poppins_500Medium" }]}>
+                    {c.name} — {c.phone}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+        <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
+          <Pressable
+            style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100 }]}
+            onPress={() => {
+              if (contacts.length === 0) {
+                Alert.alert(
+                  isHi ? "कोई संपर्क नहीं जोड़ा गया" : "No contact added",
+                  isHi ? "बिना संपर्क के, SOS ट्रिगर होने पर किसी को सचेत नहीं करेगा। फिर भी जारी रखें?" : "Without a contact, SOS won't be able to alert anyone when triggered. Continue anyway?",
+                  [
+                    { text: isHi ? "रद्द करें" : "Cancel", style: "cancel" },
+                    { text: isHi ? "जारी रखें" : "Continue Anyway", onPress: handleContactsContinue },
+                  ]
+                );
+              } else {
+                handleContactsContinue();
+              }
+            }}
+          >
+            <Text style={[styles.nextText, { color: "#fff", fontFamily: "Poppins_600SemiBold" }]}>
+              {isHi ? "जारी रखें" : "Continue"}
+            </Text>
+            <Feather name="arrow-right" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (step === "permissions") {
     const perms = [
@@ -93,6 +302,7 @@ export default function OnboardingScreen() {
       { icon: "mic" as const, labelEn: "Microphone", labelHi: "माइक्रोफोन", descEn: "Voice trigger detection", descHi: "वॉइस ट्रिगर डिटेक्शन" },
       { icon: "map-pin" as const, labelEn: "Location", labelHi: "लोकेशन", descEn: "Share with emergency contacts", descHi: "आपातकालीन संपर्कों से साझा करें" },
       { icon: "shield" as const, labelEn: "Background Location", labelHi: "बैकग्राउंड लोकेशन", descEn: "Stay protected when app is minimized", descHi: "ऐप मिनिमाइज़ होने पर भी सुरक्षित रहें" },
+      { icon: "message-square" as const, labelEn: "SMS", labelHi: "एसएमएस", descEn: "Send emergency texts to your contacts", descHi: "आपके संपर्कों को आपातकालीन संदेश भेजें" },
     ];
 
     return (
@@ -132,6 +342,24 @@ export default function OnboardingScreen() {
               </View>
             ))}
           </View>
+          <View style={[styles.batteryNote, { backgroundColor: colors.warning + "12", borderRadius: 14, borderColor: colors.warning + "35", borderWidth: 1 }]}>
+            <Feather name="battery-charging" size={18} color={colors.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.batteryNoteTitle, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
+                {isHi ? "बैटरी सेटिंग सेट करें" : "One more step: Battery settings"}
+              </Text>
+              <Text style={[styles.batteryNoteText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+                {isHi
+                  ? "SOS ट्रिगर होने पर संदेश तुरंत भेजने और खतरे में चुपचाप सक्रिय होने के लिए, कृपया NIVARA की बैटरी सेटिंग में जाकर उसे \"अप्रतिबंधित\" (Unrestricted) पर सेट करें।"
+                  : "So NIVARA can send texts instantly and trigger silently when you're in danger, please set its battery usage to \"Unrestricted\" in your phone settings."}
+              </Text>
+              <Pressable onPress={() => Linking.openSettings()} style={styles.batteryNoteBtn}>
+                <Text style={[styles.batteryNoteBtnText, { color: colors.warning, fontFamily: "Poppins_600SemiBold" }]}>
+                  {isHi ? "सेटिंग्स खोलें →" : "Open Settings →"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
@@ -150,10 +378,57 @@ export default function OnboardingScreen() {
                 </>
             }
           </Pressable>
-          <Pressable onPress={handleGetStarted} style={styles.skipButton}>
+          <Pressable onPress={() => setStep("terms")} style={styles.skipButton}>
             <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
               {isHi ? "अभी छोड़ें" : "Skip for now"}
             </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+
+  if (step === "terms") {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
+        <View style={styles.header}>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.logoText}>N</Text>
+          </View>
+          <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
+        </View>
+        <ScrollView style={styles.termsScroll} contentContainerStyle={styles.termsScrollContent}>
+          <Text style={[styles.permTitle, { color: colors.foreground, fontFamily: "Poppins_700Bold", fontSize: 22, textAlign: "left" }]}>
+            {isHi ? "नियम और शर्तें" : "Terms & Conditions"}
+          </Text>
+          <Text style={[styles.termsText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+            {isHi
+              ? "NIVARA का उपयोग करके, आप सहमत होते हैं कि:\n\n• NIVARA आपातकालीन सेवाओं (पुलिस, एम्बुलेंस) को कॉल करने का विकल्प नहीं है। तत्काल खतरे में सीधे 112 पर कॉल करें।\n\n• आपका डेटा — संपर्क, सेटिंग्स, और रिकॉर्डिंग — केवल आपके डिवाइस पर संग्रहीत है और कहीं अपलोड नहीं किया जाता।\n\n• SOS ट्रिगर होने पर, NIVARA आपके द्वारा जोड़े गए संपर्कों को आपकी लोकेशन के साथ एक टेक्स्ट संदेश भेजने का प्रयास करेगा और ऑडियो सबूत रिकॉर्ड करेगा।\n\n• विश्वसनीय संचालन के लिए ऐप को स्थान, माइक्रोफोन, एसएमएस और बैटरी अप्रतिबंध जैसी अनुमतियों की आवश्यकता है।\n\n• NIVARA अपनी सर्वश्रेष्ठ कोशिश करता है लेकिन डिवाइस, नेटवर्क, या ऑपरेटिंग सिस्टम की सीमाओं के कारण 100% विश्वसनीयता की गारंटी नहीं दे सकता।"
+              : "By using NIVARA, you agree that:\n\n• NIVARA is not a substitute for calling emergency services (police, ambulance) directly. In immediate danger, call 112 directly.\n\n• Your data — contacts, settings, and recordings — is stored only on your device and is never uploaded anywhere.\n\n• When SOS is triggered, NIVARA will attempt to text your added contacts with your location and record audio evidence.\n\n• The app needs permissions like location, microphone, SMS, and unrestricted battery usage to work reliably.\n\n• NIVARA does its best but cannot guarantee 100% reliability due to device, network, or OS limitations beyond our control."}
+          </Text>
+        </ScrollView>
+        <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
+          <Pressable
+            style={styles.termsCheckRow}
+            onPress={() => setTermsChecked(!termsChecked)}
+          >
+            <View style={[styles.checkbox, { borderColor: colors.primary, backgroundColor: termsChecked ? colors.primary : "transparent" }]}>
+              {termsChecked && <Feather name="check" size={14} color="#fff" />}
+            </View>
+            <Text style={[styles.termsCheckText, { color: colors.foreground, fontFamily: "Poppins_400Regular" }]}>
+              {isHi ? "मैं नियम और शर्तों से सहमत हूं" : "I agree to the Terms & Conditions"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100, opacity: termsChecked ? 1 : 0.5 }]}
+            onPress={handleTermsAccept}
+            disabled={!termsChecked}
+          >
+            <Text style={[styles.nextText, { color: "#fff", fontFamily: "Poppins_600SemiBold" }]}>
+              {isHi ? "सहमत हों और जारी रखें" : "Agree & Continue"}
+            </Text>
+            <Feather name="check" size={20} color="#fff" />
           </Pressable>
         </View>
       </View>
@@ -314,7 +589,7 @@ export default function OnboardingScreen() {
         </Pressable>
 
         {currentIndex < SLIDES.length - 1 && (
-          <Pressable onPress={handleGetStarted} style={styles.skipButton}>
+          <Pressable onPress={() => setStep("username")} style={styles.skipButton}>
             <Text style={[styles.skipText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
               {isHi ? "अभी छोड़ें" : "Skip for now"}
             </Text>
@@ -440,4 +715,55 @@ const styles = StyleSheet.create({
   },
   permLabel: { fontSize: 15 },
   permDesc: { fontSize: 12, marginTop: 2 },
+  textInput: {
+    width: "100%",
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    fontSize: 16,
+  },
+  disclaimerBody: { fontSize: 15, textAlign: "center", lineHeight: 24 },
+  contactsScroll: { flex: 1, width: "100%" },
+  contactsScrollContent: { paddingHorizontal: 24, alignItems: "center", paddingTop: 20 },
+  addContactBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 13,
+    width: "100%",
+  },
+  addContactBtnText: { fontSize: 14 },
+  contactChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+  },
+  contactChipText: { fontSize: 13, flex: 1 },
+  batteryNote: {
+    flexDirection: "row",
+    gap: 10,
+    padding: 14,
+    marginTop: 6,
+    width: "100%",
+  },
+  batteryNoteTitle: { fontSize: 13, marginBottom: 3 },
+  batteryNoteText: { fontSize: 12, lineHeight: 17 },
+  batteryNoteBtn: { marginTop: 8 },
+  batteryNoteBtnText: { fontSize: 12 },
+  termsScroll: { flex: 1, width: "100%" },
+  termsScrollContent: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 20, gap: 14 },
+  termsText: { fontSize: 13, lineHeight: 22 },
+  termsCheckRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  termsCheckText: { fontSize: 13, flex: 1 },
 });

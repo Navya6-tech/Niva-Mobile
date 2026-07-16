@@ -94,6 +94,22 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
     private val restartHandler = Handler(Looper.getMainLooper())
     private val recordingHandler = Handler(Looper.getMainLooper())
     private val restartRunnable = Runnable { startSpeechRecognition() }
+    private val notifWatchdogHandler = Handler(Looper.getMainLooper())
+    private val notifWatchdogRunnable: Runnable = object : Runnable {
+        override fun run() {
+            try {
+                val nm = getSystemService(NotificationManager::class.java)
+                val stillPosted = nm?.activeNotifications?.any { it.id == NOTIF_ID } ?: false
+                if (!stillPosted) {
+                    android.util.Log.d("NIVARA", "Protection notification missing - reposting")
+                    startForeground(NOTIF_ID, buildNotification())
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "notifWatchdog error: ${e.message}")
+            }
+            notifWatchdogHandler.postDelayed(this, 5000)
+        }
+    }
 
     // Wake lock
     private var wakeLock: PowerManager.WakeLock? = null
@@ -129,6 +145,8 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         android.util.Log.d("NIVARA", "Service started - audioRecording=$audioRecordingEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification())
+        notifWatchdogHandler.removeCallbacks(notifWatchdogRunnable)
+        notifWatchdogHandler.postDelayed(notifWatchdogRunnable, 5000)
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "nivara:protection")
         wakeLock?.acquire()
@@ -338,25 +356,29 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("sos_triggered", true)
         }
-        // Android 14+ requires full-screen intent notification to launch from background
-        val sosChannelId = "nivara_sos_alert"
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val sosChannel = android.app.NotificationChannel(sosChannelId, "SOS Alert", android.app.NotificationManager.IMPORTANCE_HIGH)
-            sosChannel.description = "Emergency SOS alerts"
-            getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(sosChannel)
+        // Android 14+ requires full-screen intent notification to launch from background.
+        // Only needed when the app is NOT already visible - if it is in foreground, the SOS screen
+        // will already open via the broadcast listener, so skip the alert popup entirely.
+        if (!isAppInForeground) {
+            val sosChannelId = "nivara_sos_alert"
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val sosChannel = android.app.NotificationChannel(sosChannelId, "SOS Alert", android.app.NotificationManager.IMPORTANCE_HIGH)
+                sosChannel.description = "Emergency SOS alerts"
+                getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(sosChannel)
+            }
+            val pendingIntent = PendingIntent.getActivity(this, 2, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val sosAlert = NotificationCompat.Builder(this, sosChannelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("🚨 SOS Activated")
+                .setContentText("Emergency triggered")
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setFullScreenIntent(pendingIntent, true)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(false)
+                .build()
+            getSystemService(android.app.NotificationManager::class.java).notify(998, sosAlert)
         }
-        val pendingIntent = PendingIntent.getActivity(this, 2, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val sosAlert = NotificationCompat.Builder(this, sosChannelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("🚨 SOS Activated")
-            .setContentText("Emergency triggered")
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(pendingIntent, true)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
-            .build()
-        getSystemService(android.app.NotificationManager::class.java).notify(998, sosAlert)
         try { startActivity(launchIntent) } catch (e: Exception) {}
     }
 
@@ -393,6 +415,7 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
         sensorManager.unregisterListener(this)
         restartHandler.removeCallbacks(restartRunnable)
+        notifWatchdogHandler.removeCallbacks(notifWatchdogRunnable)
         speechRecognizer?.destroy()
         speechRecognizer = null
         wakeLock?.release()

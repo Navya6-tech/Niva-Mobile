@@ -19,11 +19,12 @@ export interface EmergencyContact {
 
 export interface AppSettings {
   triggerPhrases: string[];
-  stealthMode: boolean;
   checkInDuration: number;
   shakeSensitivity: "low" | "medium" | "high";
   shakeTriggerActive: boolean;
   audioRecording: boolean;
+  username: string;
+  termsAccepted: boolean;
   voiceTriggerActive: boolean;
   onboardingComplete: boolean;
   language: "en" | "hi";
@@ -52,15 +53,17 @@ interface AppContextType {
   startCheckIn: (minutes: number) => void;
   stopCheckIn: () => void;
   markSafe: () => void;
+  resetAppData: () => Promise<void>;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   triggerPhrases: ["help me", "stop", "bachao"],
-  stealthMode: false,
   checkInDuration: 30,
   shakeSensitivity: "medium",
   shakeTriggerActive: true,
   audioRecording: false,
+  username: "",
+  termsAccepted: false,
   voiceTriggerActive: false,
   onboardingComplete: false,
   language: "en",
@@ -267,6 +270,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setSafeTimestamp(Date.now()), 1500);
   }, []);
 
+  const resetAppData = useCallback(async () => {
+    await AsyncStorage.clear();
+    setContacts([]);
+    setSettings(DEFAULT_SETTINGS);
+    sosActiveRef.current = false;
+    setSosActive(false);
+    setSosStartTime(null);
+    if (checkInRef.current) clearTimeout(checkInRef.current);
+    setCheckInTimer({ active: false, duration: 30, startTime: null });
+    try {
+      const { NativeModules, Platform } = require("react-native");
+      if (Platform.OS === "android") {
+        NativeModules.NivaraService?.stopService?.();
+        NativeModules.NivaraService?.resetAllNativeData?.();
+      }
+    } catch (e) {}
+    router.replace("/onboarding");
+  }, []);
+
   const startCheckIn = useCallback((minutes: number) => {
     if (checkInRef.current) clearTimeout(checkInRef.current);
     setCheckInTimer({ active: true, duration: minutes, startTime: Date.now() });
@@ -297,6 +319,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         startCheckIn,
         stopCheckIn,
         markSafe,
+        resetAppData,
       }}
     >
       {children}

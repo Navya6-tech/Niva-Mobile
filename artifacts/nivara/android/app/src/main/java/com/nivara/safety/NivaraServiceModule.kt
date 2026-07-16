@@ -115,6 +115,20 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             android.util.Log.e("NIVARA", "cancelSosAlert error: ${e.message}")
         }
     }
+    @ReactMethod fun resetAllNativeData() {
+        try {
+            reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+                .edit().clear().apply()
+            NivaraBackgroundService.audioRecordingEnabled = false
+            NivaraBackgroundService.voiceTriggerEnabled = false
+            NivaraBackgroundService.shakeTriggerEnabled = true
+            emergencyPhones = emptyList()
+            lastKnownLocation = null
+            android.util.Log.d("NIVARA", "resetAllNativeData: cleared")
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "resetAllNativeData error: ${e.message}")
+        }
+    }
     @ReactMethod fun prepareAudioForPlayback() {
         try {
             val am = reactApplicationContext.getSystemService(android.media.AudioManager::class.java)

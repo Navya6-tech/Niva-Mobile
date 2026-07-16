@@ -46,6 +46,10 @@ function NativeTabLayout() {
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
           <Label>{t("tabSettings")}</Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="account">
+          <Icon sf={{ default: "person.circle", selected: "person.circle.fill" }} />
+          <Label>{t("tabAccount")}</Label>
+        </NativeTabs.Trigger>
       </NativeTabs>
     );
   } catch {
@@ -120,6 +124,13 @@ function ClassicTabLayout() {
         options={{
           title: t("tabSettings"),
           tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: t("tabAccount"),
+          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
         }}
       />
     </Tabs>
