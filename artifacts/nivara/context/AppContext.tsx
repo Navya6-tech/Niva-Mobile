@@ -40,6 +40,7 @@ export interface CheckInTimer {
 interface AppContextType {
   contacts: EmergencyContact[];
   settings: AppSettings;
+  settingsLoaded: boolean;
   sosActive: boolean;
   safeTimestamp: number;
   sosStartTime: number | null;
@@ -84,6 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     startTime: null,
   });
   const checkInRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -146,6 +148,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         router.replace("/onboarding");
       }
     } catch {
+    } finally {
+      setSettingsLoaded(true);
     }
   };
 
@@ -307,6 +311,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         contacts,
         settings,
+        settingsLoaded,
         sosActive,
         sosStartTime,
         checkInTimer,

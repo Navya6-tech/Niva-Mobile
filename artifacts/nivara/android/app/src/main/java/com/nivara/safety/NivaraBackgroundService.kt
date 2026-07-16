@@ -360,26 +360,38 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         // Only needed when the app is NOT already visible - if it is in foreground, the SOS screen
         // will already open via the broadcast listener, so skip the alert popup entirely.
         if (!isAppInForeground) {
-            val sosChannelId = "nivara_sos_alert"
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val sosChannel = android.app.NotificationChannel(sosChannelId, "SOS Alert", android.app.NotificationManager.IMPORTANCE_HIGH)
-                sosChannel.description = "Emergency SOS alerts"
-                getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(sosChannel)
+            try {
+                val sosChannelId = "nivara_sos_alert"
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val sosChannel = android.app.NotificationChannel(sosChannelId, "SOS Alert", android.app.NotificationManager.IMPORTANCE_HIGH)
+                    sosChannel.description = "Emergency SOS alerts"
+                    getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(sosChannel)
+                }
+                val pendingIntent = PendingIntent.getActivity(this, 2, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                val sosAlert = NotificationCompat.Builder(this, sosChannelId)
+                    .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                    .setContentTitle("🚨 SOS Activated")
+                    .setContentText("Emergency triggered")
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setFullScreenIntent(pendingIntent, true)
+                    .setAutoCancel(true)
+                    .setOnlyAlertOnce(false)
+                    .build()
+                getSystemService(android.app.NotificationManager::class.java).notify(998, sosAlert)
+                android.util.Log.d("NIVARA", "SOS alert notification posted successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("NIVARA", "SOS alert notification FAILED: ${e.message}")
             }
-            val pendingIntent = PendingIntent.getActivity(this, 2, launchIntent ?: Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            val sosAlert = NotificationCompat.Builder(this, sosChannelId)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("🚨 SOS Activated")
-                .setContentText("Emergency triggered")
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setFullScreenIntent(pendingIntent, true)
-                .setAutoCancel(true)
-                .setOnlyAlertOnce(false)
-                .build()
-            getSystemService(android.app.NotificationManager::class.java).notify(998, sosAlert)
+        } else {
+            android.util.Log.d("NIVARA", "SOS alert notification skipped - app is in foreground")
         }
-        try { startActivity(launchIntent) } catch (e: Exception) {}
+        try {
+            startActivity(launchIntent)
+            android.util.Log.d("NIVARA", "startActivity called for SOS launch")
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "startActivity FAILED: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {

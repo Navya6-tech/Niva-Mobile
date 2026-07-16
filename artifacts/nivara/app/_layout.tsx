@@ -58,9 +58,21 @@ function PendingSosChecker() {
   }, [triggerSOS]);
   return null;
 }
-function RootLayoutNav() {
+function RootLayoutNav({ fontsReady }: { fontsReady: boolean }) {
+  const { settings, settingsLoaded } = useApp();
+  useEffect(() => {
+    // Only hide the native splash once BOTH fonts and settings are ready,
+    // so we never flash the wrong initial screen (tabs vs onboarding).
+    if (fontsReady && settingsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsReady, settingsLoaded]);
+  if (!settingsLoaded) {
+    // Keep native splash visible - render nothing yet
+    return null;
+  }
   return (
-    <Stack>
+    <Stack initialRouteName={settings.onboardingComplete ? "(tabs)" : "onboarding"}>
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="sos-active" options={{ headerShown: false, gestureEnabled: false }} />
@@ -80,13 +92,6 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
-
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-
-    }
-  }, [fontsLoaded, fontError]);
 
 
   useEffect(() => {
@@ -127,7 +132,7 @@ export default function RootLayout() {
             <PendingSosChecker />
             <GestureHandlerRootView>
               
-                <RootLayoutNav />
+                <RootLayoutNav fontsReady={fontsLoaded || !!fontError} />
               
             </GestureHandlerRootView>
           </AppProvider>
