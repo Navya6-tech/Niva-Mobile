@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { Redirect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -35,6 +36,7 @@ export default function HomeScreen() {
   const {
     contacts,
     settings,
+    settingsLoaded,
     checkInTimer,
     triggerSOS,
     startCheckIn,
@@ -106,14 +108,17 @@ export default function HomeScreen() {
     return () => sub.remove();
   }, []);
 
-  // Request permissions on mount BEFORE starting service
+  // Request permissions on mount BEFORE starting service.
+  // Only auto-request here if onboarding already ran (onboarding.tsx has its own
+  // permission-request step, on its own dedicated slide) - avoids double/premature prompts.
   useEffect(() => {
+    if (!settings.onboardingComplete) return;
     if (Platform.OS === "android") {
       requestAllPermissions().then(() => setPermissionsReady(true));
     } else {
       setPermissionsReady(true);
     }
-  }, []);
+  }, [settings.onboardingComplete]);
 
   const emergencyPhoneNumbers = contacts.map((c: any) => c.phone).filter(Boolean);
 
@@ -159,6 +164,12 @@ export default function HomeScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  // Redirect to onboarding on a fresh install / if it was never completed.
+  // This must be a Redirect (not a reactive router.replace) so the tab UI never mounts first.
+  if (settingsLoaded && !settings.onboardingComplete) {
+    return <Redirect href="/onboarding" />;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
