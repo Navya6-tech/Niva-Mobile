@@ -1,5 +1,4 @@
 import * as Haptics from "expo-haptics";
-import { Redirect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -164,12 +163,6 @@ export default function HomeScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
-
-  // Redirect to onboarding on a fresh install / if it was never completed.
-  // This must be a Redirect (not a reactive router.replace) so the tab UI never mounts first.
-  if (settingsLoaded && !settings.onboardingComplete) {
-    return <Redirect href="/onboarding" />;
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

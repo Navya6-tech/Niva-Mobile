@@ -314,7 +314,7 @@ export default function OnboardingScreen() {
           <Text style={[styles.appName, { color: colors.primary, fontFamily: "Poppins_700Bold" }]}>NIVARA</Text>
         </View>
 
-        <View style={styles.permBody}>
+        <ScrollView style={styles.permBodyScroll} contentContainerStyle={styles.permBodyContent} showsVerticalScrollIndicator={false}>
           <View style={[styles.permIconCircle, { backgroundColor: colors.primary + "15" }]}>
             <Feather name="shield" size={52} color={colors.primary} />
           </View>
@@ -360,7 +360,7 @@ export default function OnboardingScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
           <Pressable
@@ -687,6 +687,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
+    gap: 16,
+  },
+  permBodyScroll: { flex: 1, width: "100%" },
+  permBodyContent: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
+    alignItems: "center",
     gap: 16,
   },
   permIconCircle: {

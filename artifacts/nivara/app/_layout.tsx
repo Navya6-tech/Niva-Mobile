@@ -72,7 +72,8 @@ function RootLayoutNav({ fontsReady }: { fontsReady: boolean }) {
     return null;
   }
   return (
-    <Stack initialRouteName={settings.onboardingComplete ? "(tabs)" : "onboarding"}>
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="sos-active" options={{ headerShown: false, gestureEnabled: false }} />
