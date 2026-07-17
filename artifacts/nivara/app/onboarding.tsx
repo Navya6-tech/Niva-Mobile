@@ -29,8 +29,8 @@ const SLIDES = [
     icon: "mic" as const,
     titleEn: "Your voice is\nyour shield",
     titleHi: "आपकी आवाज़\nआपकी ढाल है",
-    bodyEn: "Set custom trigger phrases like 'help me' or 'bachao'. NIVARA listens and automatically activates SOS when you need it most.",
-    bodyHi: "कस्टम ट्रिगर वाक्यांश जैसे 'मदद करो' या 'बचाओ' सेट करें। NIVARA सुनता है और ज़रूरत पर SOS सक्रिय करता है।",
+    bodyEn: "Set custom trigger phrases like 'help me' or 'bachao'. For your privacy, voice listening only works while NIVARA is open — it never listens in the background. Shake detection, however, keeps watching for danger even when the app is minimized.",
+    bodyHi: "कस्टम ट्रिगर वाक्यांश जैसे 'मदद करो' या 'बचाओ' सेट करें। आपकी गोपनीयता के लिए, वॉइस लिसनिंग केवल तभी काम करती है जब NIVARA खुला हो — यह बैकग्राउंड में कभी नहीं सुनता। वहीं, शेक डिटेक्शन ऐप मिनिमाइज़ होने पर भी खतरे पर नज़र रखता है।",
   },
   {
     id: "2",
@@ -299,7 +299,7 @@ export default function OnboardingScreen() {
   if (step === "permissions") {
     const perms = [
       { icon: "bell" as const, labelEn: "Notifications", labelHi: "नोटिफिकेशन", descEn: "Background protection alerts", descHi: "बैकग्राउंड सुरक्षा अलर्ट" },
-      { icon: "mic" as const, labelEn: "Microphone", labelHi: "माइक्रोफोन", descEn: "Voice trigger detection", descHi: "वॉइस ट्रिगर डिटेक्शन" },
+      { icon: "mic" as const, labelEn: "Microphone", labelHi: "माइक्रोफोन", descEn: "Voice trigger - works only while app is open", descHi: "वॉइस ट्रिगर - केवल ऐप खुला होने पर काम करता है" },
       { icon: "map-pin" as const, labelEn: "Location", labelHi: "लोकेशन", descEn: "Share with emergency contacts", descHi: "आपातकालीन संपर्कों से साझा करें" },
       { icon: "shield" as const, labelEn: "Background Location", labelHi: "बैकग्राउंड लोकेशन", descEn: "Stay protected when app is minimized", descHi: "ऐप मिनिमाइज़ होने पर भी सुरक्षित रहें" },
       { icon: "message-square" as const, labelEn: "SMS", labelHi: "एसएमएस", descEn: "Send emergency texts to your contacts", descHi: "आपके संपर्कों को आपातकालीन संदेश भेजें" },
@@ -327,19 +327,41 @@ export default function OnboardingScreen() {
 
           <View style={styles.permList}>
             {perms.map((p) => (
-              <View key={p.icon} style={[styles.permRow, { backgroundColor: colors.card, borderRadius: 14 }]}>
-                <View style={[styles.permIconBox, { backgroundColor: colors.primary + "18" }]}>
-                  <Feather name={p.icon} size={20} color={colors.primary} />
+              <React.Fragment key={p.icon}>
+                <View style={[styles.permRow, { backgroundColor: colors.card, borderRadius: 14 }]}>
+                  <View style={[styles.permIconBox, { backgroundColor: colors.primary + "18" }]}>
+                    <Feather name={p.icon} size={20} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.permLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
+                      {isHi ? p.labelHi : p.labelEn}
+                    </Text>
+                    <Text style={[styles.permDesc, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+                      {isHi ? p.descHi : p.descEn}
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.permLabel, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
-                    {isHi ? p.labelHi : p.labelEn}
-                  </Text>
-                  <Text style={[styles.permDesc, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
-                    {isHi ? p.descHi : p.descEn}
-                  </Text>
-                </View>
-              </View>
+                {p.icon === "message-square" && (
+                  <View style={[styles.batteryNote, { backgroundColor: colors.warning + "12", borderRadius: 14, borderColor: colors.warning + "35", borderWidth: 1 }]}>
+                    <Feather name="message-circle" size={18} color={colors.warning} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.batteryNoteTitle, { color: colors.foreground, fontFamily: "Poppins_600SemiBold" }]}>
+                        {isHi ? "SMS सेटिंग भी जांचें" : "One more thing: SMS settings"}
+                      </Text>
+                      <Text style={[styles.batteryNoteText, { color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }]}>
+                        {isHi
+                          ? "SOS ट्रिगर होने पर संदेश चुपचाप भेजने के लिए, कृपया अपनी सेटिंग्स में जाकर NIVARA को SMS भेजने की अप्रतिबंधित अनुमति दें।"
+                          : "So NIVARA can send SMS silently the instant SOS is triggered, please go to your phone's Settings and allow it unrestricted permission to send messages."}
+                      </Text>
+                      <Pressable onPress={() => Linking.openSettings()} style={styles.batteryNoteBtn}>
+                        <Text style={[styles.batteryNoteBtnText, { color: colors.warning, fontFamily: "Poppins_600SemiBold" }]}>
+                          {isHi ? "सेटिंग्स खोलें →" : "Open Settings →"}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+              </React.Fragment>
             ))}
           </View>
           <View style={[styles.batteryNote, { backgroundColor: colors.warning + "12", borderRadius: 14, borderColor: colors.warning + "35", borderWidth: 1 }]}>
