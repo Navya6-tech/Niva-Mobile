@@ -144,7 +144,24 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         }
         android.util.Log.d("NIVARA", "Service started - audioRecording=$audioRecordingEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         createNotificationChannel()
-        startForeground(NOTIF_ID, buildNotification())
+        // Android 14+ requires the RUNTIME permission to actually be granted for each
+        // declared foreground service type, not just requested. Only declare types we
+        // currently have real permission for, and never let a failure here crash the app.
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val hasMic = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val hasLocation = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                var type = 0
+                if (hasMic) type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                if (hasLocation) type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                if (type == 0) type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                startForeground(NOTIF_ID, buildNotification(), type)
+            } else {
+                startForeground(NOTIF_ID, buildNotification())
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("NIVARA", "startForeground FAILED: ${e.message}")
+        }
         notifWatchdogHandler.removeCallbacks(notifWatchdogRunnable)
         notifWatchdogHandler.postDelayed(notifWatchdogRunnable, 5000)
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
