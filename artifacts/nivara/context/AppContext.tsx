@@ -144,9 +144,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         syncToNative(); // Sync immediately, retry if not ready
       }
 
-      if (!merged.onboardingComplete) {
-        router.replace("/onboarding");
-      }
+      // Note: onboarding redirect is now handled declaratively via <Redirect>
+      // in (tabs)/index.tsx, not here, to avoid competing/duplicate navigation calls.
     } catch {
     } finally {
       setSettingsLoaded(true);

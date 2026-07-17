@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -48,6 +49,15 @@ export default function HomeScreen() {
   const [checkInRemaining, setCheckInRemaining] = useState(0);
   const [checkInMinutes, setCheckInMinutes] = useState(30);
   const [shakeCount, setShakeCount] = useState(0);
+  const onboardingRedirectedRef = useRef(false);
+  useEffect(() => {
+    // Navigate to onboarding exactly once - never re-fire on re-renders,
+    // to avoid any possibility of a redirect loop.
+    if (settingsLoaded && !settings.onboardingComplete && !onboardingRedirectedRef.current) {
+      onboardingRedirectedRef.current = true;
+      router.replace("/onboarding");
+    }
+  }, [settingsLoaded, settings.onboardingComplete]);
 
 
   useEffect(() => {
