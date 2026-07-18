@@ -246,15 +246,6 @@ export default function OnboardingScreen() {
             keyboardType="phone-pad"
             style={[styles.textInput, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Poppins_500Medium", marginTop: 12 }]}
           />
-          <Pressable
-            style={[styles.addContactBtn, { backgroundColor: colors.primary + "15", borderRadius: 12, marginTop: 12 }]}
-            onPress={handleAddContact}
-          >
-            <Feather name="plus" size={16} color={colors.primary} />
-            <Text style={[styles.addContactBtnText, { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>
-              {isHi ? "संपर्क जोड़ें" : "Add Contact"}
-            </Text>
-          </Pressable>
           {contacts.length > 0 && (
             <View style={{ marginTop: 20, gap: 8, width: "100%" }}>
               {contacts.map((c) => (
@@ -271,7 +262,12 @@ export default function OnboardingScreen() {
         <View style={[styles.footer, { paddingBottom: botPad + 24 }]}>
           <Pressable
             style={[styles.nextButton, { backgroundColor: colors.primary, borderRadius: 100 }]}
-            onPress={() => {
+            onPress={async () => {
+              // Save whatever is in the name/phone fields first, so users don't need
+              // a separate "Add" step - filling the fields and tapping Continue just works.
+              if (contactName.trim() && contactPhone.trim()) {
+                await handleAddContact();
+              }
               if (contacts.length === 0) {
                 Alert.alert(
                   isHi ? "कोई संपर्क नहीं जोड़ा गया" : "No contact added",

@@ -136,6 +136,14 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         instance = this
         // Load persisted settings from SharedPreferences
         val prefs = getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+        // Never start (or post any notification) while the user is still going through
+        // onboarding - this protects against the OS auto-restarting this service
+        // (e.g. via our AlarmManager restart safety net) before permissions are granted.
+        if (!prefs.getBoolean("onboardingComplete", false)) {
+            android.util.Log.d("NIVARA", "startProtection SKIPPED - onboarding not complete yet")
+            stopSelf()
+            return
+        }
         audioRecordingEnabled = prefs.getBoolean("audioRecording", false)
         shakeTriggerEnabled = prefs.getBoolean("shakeTrigger", true)
         val phonesStr = prefs.getString("phones", "")

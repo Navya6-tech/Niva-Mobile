@@ -49,7 +49,9 @@ export function useNativeBackgroundService(
     updatePhrases(triggerPhrases);
   }, [triggerPhrases, enabled, updatePhrases]);
   useEffect(() => {
-    if (Platform.OS !== "android" || !NivaraService || !emergencyPhones || emergencyPhones.length === 0) return;
+    // Also require `enabled` so this never fires (and never requests location
+    // permission) before onboarding/permissions are actually done.
+    if (Platform.OS !== "android" || !NivaraService || !enabled || !emergencyPhones || emergencyPhones.length === 0) return;
     // Get location and sync with contacts
     (async () => {
       try {

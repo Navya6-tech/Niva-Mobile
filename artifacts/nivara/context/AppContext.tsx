@@ -134,6 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               NativeModules.NivaraService.setAudioRecordingEnabled(merged.audioRecording ?? false);
               NativeModules.NivaraService.setVoiceTriggerEnabled(merged.voiceTriggerActive ?? false);
               NativeModules.NivaraService.setShakeTriggerEnabled?.(merged.shakeTriggerActive ?? true);
+              NativeModules.NivaraService.setOnboardingComplete?.(merged.onboardingComplete ?? false);
             } else if (retries < 5) {
               setTimeout(() => syncToNative(retries + 1), 1000);
             }

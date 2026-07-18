@@ -103,6 +103,11 @@ class NivaraServiceModule(reactContext: ReactApplicationContext) : ReactContextB
             .edit().putBoolean("shakeTrigger", enabled).apply()
         android.util.Log.d("NIVARA", "setShakeTriggerEnabled: $enabled")
     }
+    @ReactMethod fun setOnboardingComplete(complete: Boolean) {
+        reactApplicationContext.getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("onboardingComplete", complete).apply()
+        android.util.Log.d("NIVARA", "setOnboardingComplete: $complete")
+    }
     @ReactMethod fun setVoiceTriggerEnabled(enabled: Boolean) { 
         NivaraBackgroundService.voiceTriggerEnabled = enabled
         android.util.Log.d("NIVARA", "setVoiceTriggerEnabled: $enabled, current=${NivaraBackgroundService.voiceTriggerEnabled}")
