@@ -17,7 +17,6 @@ import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNativeBackgroundService } from "@/hooks/useNativeBackgroundService";
-import { requestAllPermissions } from "@/hooks/usePermissions";
 import { CountdownModal } from "@/components/CountdownModal";
 import { useShakeDetector } from "@/hooks/useShakeDetector";
 import { useVoiceTrigger } from "@/hooks/useVoiceTrigger";
@@ -117,14 +116,12 @@ export default function HomeScreen() {
     return () => sub.remove();
   }, []);
 
-  // Request permissions on mount BEFORE starting service.
-  // Only auto-request here if onboarding already ran (onboarding.tsx has its own
-  // permission-request step, on its own dedicated slide) - avoids double/premature prompts.
+  // Permissions are now requested exclusively during onboarding's dedicated
+  // permissions slide (onboarding.tsx). By the time onboardingComplete is true,
+  // that already happened once - re-requesting here on every single app open
+  // was causing prompts (e.g. notifications) to reappear on every launch.
   useEffect(() => {
-    if (!settings.onboardingComplete) return;
-    if (Platform.OS === "android") {
-      requestAllPermissions().then(() => setPermissionsReady(true));
-    } else {
+    if (settings.onboardingComplete) {
       setPermissionsReady(true);
     }
   }, [settings.onboardingComplete]);
