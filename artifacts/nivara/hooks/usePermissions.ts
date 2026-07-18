@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import { Platform, PermissionsAndroid } from "react-native";
 
 export async function requestAllPermissions() {
+  console.log("NIVARA requestAllPermissions CALLED", new Error().stack);
   if (Platform.OS === "web") return;
 
   try {
