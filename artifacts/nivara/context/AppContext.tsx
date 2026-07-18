@@ -9,7 +9,6 @@ import React, {
   useState,
 } from "react";
 import { useNativeBackgroundService } from "@/hooks/useNativeBackgroundService";
-import { useBackgroundProtection } from "@/hooks/useBackgroundProtection";
 
 export interface EmergencyContact {
   id: string;
@@ -181,7 +180,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("settings", JSON.stringify(updated));
   }, [settings]);
 
-  useBackgroundProtection(settings.backgroundProtectionEnabled);
+  // Note: legacy useBackgroundProtection() removed - it was an old Expo-Location-based
+  // background implementation from before the custom native NivaraBackgroundService was
+  // built. It was requesting Notifications + Location permissions immediately on app
+  // launch (since it ran unconditionally inside AppProvider, which wraps onboarding too),
+  // completely bypassing the onboarding permissions slide timing.
 
   const sosActiveRef = useRef(false);
   // Sync emergency data to native service periodically
