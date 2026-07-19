@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -133,6 +134,21 @@ export default function RecordingsScreen() {
     await saveRecordingMeta(updated);
     refresh();
   }, [refresh]);
+  const handleDownload = useCallback(async (rec: RecordingMeta) => {
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert(t("downloadUnavailable"), t("downloadUnavailableDesc"));
+        return;
+      }
+      await Sharing.shareAsync(rec.uri, {
+        mimeType: "audio/m4a",
+        dialogTitle: t("downloadDialogTitle"),
+      });
+    } catch (e) {
+      Alert.alert(t("downloadFailed"), t("downloadFailedDesc"));
+    }
+  }, [t]);
 
   const handleDeleteRecording = useCallback((rec: RecordingMeta) => {
     const doDelete = async () => {
@@ -262,6 +278,15 @@ export default function RecordingsScreen() {
                       <Feather name="bookmark" size={14} color={rec.keepForever ? colors.primary : colors.mutedForeground} />
                       <Text style={[styles.recBtnText, { color: rec.keepForever ? colors.primary : colors.mutedForeground, fontFamily: "Poppins_500Medium" }]}>
                         {rec.keepForever ? t("saved") : t("keep")}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.recBtn, { backgroundColor: colors.muted, borderRadius: 10 }]}
+                      onPress={() => handleDownload(rec)}
+                    >
+                      <Feather name="download" size={14} color={colors.mutedForeground} />
+                      <Text style={[styles.recBtnText, { color: colors.mutedForeground, fontFamily: "Poppins_500Medium" }]}>
+                        {t("download")}
                       </Text>
                     </Pressable>
                     <Pressable

@@ -115,6 +115,12 @@ const T = {
     save: "Save",
     guest: "Friend",
     emergencyContactsLabel: "emergency contacts",
+    download: "Download",
+    downloadDialogTitle: "Save recording",
+    downloadUnavailable: "Sharing not available",
+    downloadUnavailableDesc: "This device doesn't support the share/save sheet.",
+    downloadFailed: "Couldn't download",
+    downloadFailedDesc: "Something went wrong while trying to save this recording.",
   },
   hi: {
     tabHome: "होम",
@@ -228,6 +234,12 @@ const T = {
     save: "सहेजें",
     guest: "मित्र",
     emergencyContactsLabel: "आपातकालीन संपर्क",
+    download: "डाउनलोड",
+    downloadDialogTitle: "रिकॉर्डिंग सहेजें",
+    downloadUnavailable: "शेयरिंग उपलब्ध नहीं है",
+    downloadUnavailableDesc: "यह डिवाइस शेयर/सेव शीट को सपोर्ट नहीं करता।",
+    downloadFailed: "डाउनलोड नहीं हो सका",
+    downloadFailedDesc: "इस रिकॉर्डिंग को सहेजने की कोशिश में कुछ गलत हो गया।",
   },
 } as const;
 

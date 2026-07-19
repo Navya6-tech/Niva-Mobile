@@ -136,25 +136,12 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         instance = this
         // Load persisted settings from SharedPreferences
         val prefs = getSharedPreferences("nivara_prefs", android.content.Context.MODE_PRIVATE)
-        // Never start (or post any notification) while the user is still going through
-        // onboarding - this protects against the OS auto-restarting this service
-        // (e.g. via our AlarmManager restart safety net) before permissions are granted.
-        if (!prefs.getBoolean("onboardingComplete", false)) {
-            android.util.Log.d("NIVARA", "startProtection SKIPPED - onboarding not complete yet")
-            stopSelf()
-            return
-        }
-        audioRecordingEnabled = prefs.getBoolean("audioRecording", false)
-        shakeTriggerEnabled = prefs.getBoolean("shakeTrigger", true)
-        val phonesStr = prefs.getString("phones", "")
-        if (!phonesStr.isNullOrEmpty()) {
-            NivaraServiceModule.emergencyPhones = phonesStr.split(",").filter { it.isNotEmpty() }
-        }
-        android.util.Log.d("NIVARA", "Service started - audioRecording=$audioRecordingEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         createNotificationChannel()
-        // Android 14+ requires the RUNTIME permission to actually be granted for each
-        // declared foreground service type, not just requested. Only declare types we
-        // currently have real permission for, and never let a failure here crash the app.
+        // Android REQUIRES startForeground() to be called promptly whenever the service is
+        // started via startForegroundService() - skipping it crashes the whole app with
+        // ForegroundServiceDidNotStartInTimeException. So this always runs first, then we
+        // stop immediately right after if onboarding isn't actually done yet, instead of
+        // skipping the call entirely.
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 val hasMic = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -170,6 +157,22 @@ class NivaraBackgroundService : Service(), SensorEventListener, RecognitionListe
         } catch (e: Exception) {
             android.util.Log.e("NIVARA", "startForeground FAILED: ${e.message}")
         }
+        // Never keep running (or leave the notification up) while the user is still going
+        // through onboarding - this protects against the OS auto-restarting this service
+        // (e.g. via our AlarmManager restart safety net) before permissions are granted.
+        if (!prefs.getBoolean("onboardingComplete", false)) {
+            android.util.Log.d("NIVARA", "startProtection - onboarding not complete, stopping immediately")
+            try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (e: Exception) {}
+            stopSelf()
+            return
+        }
+        audioRecordingEnabled = prefs.getBoolean("audioRecording", false)
+        shakeTriggerEnabled = prefs.getBoolean("shakeTrigger", true)
+        val phonesStr = prefs.getString("phones", "")
+        if (!phonesStr.isNullOrEmpty()) {
+            NivaraServiceModule.emergencyPhones = phonesStr.split(",").filter { it.isNotEmpty() }
+        }
+        android.util.Log.d("NIVARA", "Service started - audioRecording=$audioRecordingEnabled, phones=${NivaraServiceModule.emergencyPhones.size}")
         notifWatchdogHandler.removeCallbacks(notifWatchdogRunnable)
         notifWatchdogHandler.postDelayed(notifWatchdogRunnable, 5000)
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager

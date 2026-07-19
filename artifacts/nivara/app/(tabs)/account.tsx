@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -67,7 +66,7 @@ export default function AccountScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { settings, contacts, updateSettings, resetAppData } = useApp();
+  const { settings, contacts, updateSettings } = useApp();
   const [editVisible, setEditVisible] = useState(false);
   const [nameInput, setNameInput] = useState(settings.username || "");
 
@@ -84,16 +83,6 @@ export default function AccountScreen() {
     setEditVisible(false);
   };
 
-  const handleReset = () => {
-    Alert.alert(
-      t("resetConfirmTitle"),
-      t("resetConfirmDesc"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("resetAppData"), style: "destructive", onPress: () => resetAppData() },
-      ]
-    );
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -142,17 +131,6 @@ export default function AccountScreen() {
           />
         </View>
 
-        <SectionHeader title={t("dangerZoneSection")} />
-        <View style={[styles.card, { backgroundColor: colors.card, borderRadius: 18, borderColor: colors.destructive + "30", borderWidth: 1 }]}>
-          <Row
-            icon={<Feather name="trash-2" size={18} color={colors.destructive} />}
-            label={t("resetAppData")}
-            sublabel={t("resetAppDataDesc")}
-            onPress={handleReset}
-            isLast
-            destructive
-          />
-        </View>
       </ScrollView>
 
       <Modal visible={editVisible} transparent animationType="fade" onRequestClose={() => setEditVisible(false)}>

@@ -285,21 +285,7 @@ export default function SettingsScreen() {
               const next = levels[(levels.indexOf(settings.shakeSensitivity) + 1) % levels.length];
               updateSettings({ shakeSensitivity: next });
             }}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <SettingRow
-            icon={<Feather name="video-off" size={18} color="#607D8B" />}
-            label={t("stealthMode")}
-            sublabel={t("stealthModeDesc")}
             isLast
-            right={
-              <Switch
-                value={settings.stealthMode}
-                onValueChange={(v) => updateSettings({ stealthMode: v })}
-                trackColor={{ true: colors.primary, false: colors.muted }}
-                thumbColor="#fff"
-              />
-            }
           />
         </View>
 
